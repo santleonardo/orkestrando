@@ -432,7 +432,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 export function useAuth(): AuthContextValue {
   const context = useContext(AuthContext)
   if (context === undefined) {
-    throw new Error('useAuth deve ser usado dentro de um AuthProvider')
+    // Return safe defaults during SSR/prerendering when no AuthProvider is present
+    return {
+      user: null,
+      isAuthenticated: false,
+      isLoading: false,
+      error: null,
+      login: async () => { throw new Error('AuthProvider not found') },
+      register: async () => ({ success: false, message: 'AuthProvider not found' }),
+      logout: async () => {},
+      refreshProfile: async () => {},
+      clearError: () => {},
+      role: null,
+    }
   }
   return context
 }
