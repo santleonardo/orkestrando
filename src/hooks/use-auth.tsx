@@ -280,15 +280,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Redirect based on role
         const role = (user?.role || user?.profile?.role || 'STUDENT') as Role
         if (role === 'SUPER_ADMIN') {
-          window.location.href = '/dashboard'
+          window.location.href = '/'
         } else if (role === 'COORDINATOR') {
-          window.location.href = '/dashboard/coordinator'
+          window.location.href = '/coordinator'
         } else if (role === 'PROFESSOR') {
-          window.location.href = '/dashboard/professor'
+          window.location.href = '/professor'
         } else if (role === 'STUDENT') {
-          window.location.href = '/dashboard/student'
+          window.location.href = '/student'
         } else {
-          window.location.href = '/dashboard'
+          window.location.href = '/'
         }
       } catch (err) {
         setState((prev) => ({
