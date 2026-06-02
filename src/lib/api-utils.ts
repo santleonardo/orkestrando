@@ -409,8 +409,8 @@ export async function createAuditLog(params: {
       resource: params.resource,
       resourceId: params.resourceId,
       details: params.details ? JSON.stringify(params.details) : undefined,
-      ipAddress: params.request.headers.get('x-forwarded-for') || params.request.headers.get('x-real-ip') || undefined,
-      userAgent: params.request.headers.get('user-agent') || undefined,
+      ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,
+      userAgent: request.headers.get('user-agent') || undefined,
     },
   })
 }
