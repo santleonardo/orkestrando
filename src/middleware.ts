@@ -1,25 +1,21 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
-const PUBLIC_ROUTES = ['/login', '/register', '/forgot-password']
-const DASHBOARD_ROUTE = '/dashboard'
+const PUBLIC_ROUTES = ['/login', '/register', '/forgot-password', '/terms', '/privacy']
+const PROTECTED_PREFIXES = ['/coordinator', '/professor', '/student', '/assistant']
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
+  const token = request.cookies.get('orkestrando-token')
 
   // Allow public routes
   if (PUBLIC_ROUTES.some(route => pathname.startsWith(route))) {
-    // If already logged in, redirect to dashboard
-    const token = request.cookies.get('orkestrando-token')
-    if (token) {
-      return NextResponse.redirect(new URL(DASHBOARD_ROUTE, request.url))
-    }
     return NextResponse.next()
   }
 
-  // Protect dashboard routes
-  if (pathname.startsWith(DASHBOARD_ROUTE)) {
-    const token = request.cookies.get('orkestrando-token')
+  // Protect dashboard/role routes
+  const isProtected = PROTECTED_PREFIXES.some(prefix => pathname.startsWith(prefix))
+  if (isProtected) {
     if (!token) {
       const loginUrl = new URL('/login', request.url)
       loginUrl.searchParams.set('callbackUrl', pathname)
@@ -50,18 +46,9 @@ export function middleware(request: NextRequest) {
     }
   }
 
-  // Allow root page - redirect to dashboard if authenticated, or to login
-  if (pathname === '/') {
-    const token = request.cookies.get('orkestrando-token')
-    if (token) {
-      return NextResponse.redirect(new URL(DASHBOARD_ROUTE, request.url))
-    }
-    return NextResponse.redirect(new URL('/login', request.url))
-  }
-
   return NextResponse.next()
 }
 
 export const config = {
-  matcher: ['/((?!api|_next/static|_next/image|favicon.ico|components|lib|styles|logo.svg).*)'],
+  matcher: ['/((?!api|_next/static|_next/image|favicon.ico|components|lib|styles|logo.svg|auth/callback).*)'],
 }
