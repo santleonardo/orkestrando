@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { db } from '@/lib/db'
 import { parseBody, handleApiError, apiError, getAuthProfile } from '@/lib/api-utils'
+import bcrypt from 'bcryptjs'
 
 // ==================== Schemas ====================
 
@@ -26,9 +27,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 })
     }
 
-    // PLACEHOLDER: replace with bcrypt.compare in production
-    const isValidPassword =
-      body.password === user.passwordHash || user.passwordHash === 'PLACEHOLDER'
+    const isValidPassword = await bcrypt.compare(body.password, user.passwordHash)
 
     if (!isValidPassword) {
       return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 })

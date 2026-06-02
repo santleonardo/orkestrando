@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { db } from '@/lib/db'
 import { parseBody, handleApiError, createAuditLog } from '@/lib/api-utils'
+import bcrypt from 'bcryptjs'
 
 // Role values must match the Prisma `Role` enum exactly
 const registerSchema = z.object({
@@ -32,8 +33,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // PLACEHOLDER: hash with bcrypt in production
-    const passwordHash = 'PLACEHOLDER'
+    const passwordHash = await bcrypt.hash(body.password, 12)
 
     const result = await db.$transaction(async (tx) => {
       const user = await tx.user.create({
