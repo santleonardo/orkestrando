@@ -558,22 +558,22 @@ export const DASHBOARD_KPI_CONFIG = {
 
 export const SIDEBAR_MENU_ITEMS = {
   common: [
-    { id: 'dashboard', label: 'Painel', icon: 'LayoutDashboard', href: '/' },
-    { id: 'messages', label: 'Mensagens', icon: 'MessageSquare', href: '/messages', badge: 'unread' },
-    { id: 'notifications', label: 'Notificações', icon: 'Bell', href: '/notifications', badge: 'unread' },
+    { id: 'dashboard', label: 'Painel', icon: 'LayoutDashboard', href: '/coordinator' },
+    { id: 'messages', label: 'Mensagens', icon: 'MessageSquare', href: '/coordinator/messages', badge: 'unread' },
+    { id: 'notifications', label: 'Notificações', icon: 'Bell', href: '/coordinator', badge: 'unread' },
   ],
 
   [Role.SUPER_ADMIN]: [
-    { id: 'dashboard', label: 'Painel', icon: 'LayoutDashboard', href: '/' },
-    { id: 'organizations', label: 'Organizações', icon: 'Building2', href: '/organizations' },
-    { id: 'users', label: 'Usuários', icon: 'Users', href: '/users' },
+    { id: 'dashboard', label: 'Painel', icon: 'LayoutDashboard', href: '/coordinator' },
+    { id: 'organizations', label: 'Organizações', icon: 'Building2', href: '/coordinator' },
+    { id: 'users', label: 'Usuários', icon: 'Users', href: '/coordinator' },
     { id: 'divider_system', label: 'Sistema', isDivider: true },
-    { id: 'system_settings', label: 'Configurações', icon: 'Settings', href: '/settings' },
-    { id: 'audit_logs', label: 'Logs de Auditoria', icon: 'FileSearch', href: '/audit' },
-    { id: 'system_health', label: 'Saúde do Sistema', icon: 'Activity', href: '/system/health' },
+    { id: 'system_settings', label: 'Configurações', icon: 'Settings', href: '/coordinator' },
+    { id: 'audit_logs', label: 'Logs de Auditoria', icon: 'FileSearch', href: '/coordinator' },
+    { id: 'system_health', label: 'Saúde do Sistema', icon: 'Activity', href: '/coordinator' },
     { id: 'divider_support', label: 'Suporte', isDivider: true },
-    { id: 'messages', label: 'Mensagens', icon: 'MessageSquare', href: '/messages', badge: 'unread' },
-    { id: 'notifications', label: 'Notificações', icon: 'Bell', href: '/notifications', badge: 'unread' },
+    { id: 'messages', label: 'Mensagens', icon: 'MessageSquare', href: '/coordinator/messages', badge: 'unread' },
+    { id: 'notifications', label: 'Notificações', icon: 'Bell', href: '/coordinator', badge: 'unread' },
   ],
 
   [Role.COORDINATOR]: [
@@ -651,8 +651,8 @@ export const SIDEBAR_MENU_ITEMS = {
     { id: 'materials', label: 'Materiais', icon: 'FolderOpen', href: '/assistant/materials' },
     { id: 'reports', label: 'Relatórios', icon: 'BarChart3', href: '/assistant/reports' },
     { id: 'divider_communication', label: 'Comunicação', isDivider: true },
-    { id: 'messages', label: 'Mensagens', icon: 'MessageSquare', href: '/messages', badge: 'unread' },
-    { id: 'notifications', label: 'Notificações', icon: 'Bell', href: '/notifications', badge: 'unread' },
+    { id: 'messages', label: 'Mensagens', icon: 'MessageSquare', href: '/assistant', badge: 'unread' },
+    { id: 'notifications', label: 'Notificações', icon: 'Bell', href: '/assistant', badge: 'unread' },
   ],
 } as const;
 
