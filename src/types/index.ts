@@ -152,28 +152,33 @@ export interface Organization {
 
 export interface Profile {
   id: string;
-  orgId: string;
-  userId: string;
-  role: Role;
-  firstName: string;
-  lastName: string;
-  displayName: string;
-  email: string;
+  orgId?: string | null;
+  userId?: string | null;
+  role: Role | string;
+  firstName?: string | null;
+  lastName?: string | null;
+  displayName?: string | null;
+  name?: string | null;
+  email?: string | null;
   phone?: string | null;
   avatar?: string | null;
-  dateOfBirth?: Date | null;
+  avatarUrl?: string | null;
+  dateOfBirth?: Date | string | null;
   gender?: string | null;
   address?: string | null;
   city?: string | null;
   state?: string | null;
   zipCode?: string | null;
   country?: string | null;
-  isActive: boolean;
-  lastLoginAt?: Date | null;
-  createdAt: Date;
-  updatedAt: Date;
+  isActive?: boolean;
+  lastLoginAt?: Date | string | null;
+  createdAt?: Date | string | null;
+  updatedAt?: Date | string | null;
+  bio?: string | null;
+  profile?: any;
   organization?: Organization;
   permissions?: Permission[];
+  [key: string]: any;
 }
 
 export interface Permission {
