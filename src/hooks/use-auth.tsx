@@ -429,14 +429,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 export function useAuth(): AuthContextValue {
   const context = useContext(AuthContext)
   if (context === undefined) {
-    // Return safe defaults during SSR/prerendering when no AuthProvider is present
+    // Safe defaults during SSR/prerendering
     return {
       user: null,
       isAuthenticated: false,
-      isLoading: false,
+      isLoading: true,
       error: null,
-      login: async () => { throw new Error('AuthProvider not found') },
-      register: async () => ({ success: false, message: 'AuthProvider not found' }),
+      login: async () => {},
+      register: async () => ({ success: false, message: 'Não foi possível conectar ao sistema.' }),
       logout: async () => {},
       refreshProfile: async () => {},
       clearError: () => {},
