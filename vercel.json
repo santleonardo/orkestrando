@@ -26,29 +26,6 @@
     }
   ],
 
-  "redirects": [
-    {
-      "source": "/login",
-      "destination": "/auth/login",
-      "permanent": false
-    },
-    {
-      "source": "/register",
-      "destination": "/auth/register",
-      "permanent": false
-    },
-    {
-      "source": "/forgot-password",
-      "destination": "/auth/forgot-password",
-      "permanent": false
-    },
-    {
-      "source": "/reset-password",
-      "destination": "/auth/reset-password",
-      "permanent": false
-    }
-  ],
-
   "crons": [
     {
       "path": "/api/cron/cleanup",
