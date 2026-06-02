@@ -1,155 +1,173 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { z } from 'zod'
-import { db } from '@/lib/db'
-import { parseBody, handleApiError, apiError, getAuthProfile } from '@/lib/api-utils'
-import bcrypt from 'bcryptjs'
 
-// ==================== Schemas ====================
-
-const loginSchema = z.object({
-  email: z.string().email('Invalid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
-})
-
-// ==================== POST /api/auth  (login) ====================
+// ==================== POST /api/auth/login ====================
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await parseBody(request, loginSchema)
+    const body = await request.json()
+    const { email, password } = body
 
-    const user = await db.user.findUnique({
-      where: { email: body.email },
-      include: { profile: true },
+    if (!email || !password) {
+      return NextResponse.json(
+        { success: false, error: { message: 'Email and password are required' } },
+        { status: 400 }
+      )
+    }
+
+    const { createClient } = await import('@supabase/supabase-js')
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    const supabase = createClient(supabaseUrl, supabaseKey)
+
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
     })
 
-    if (!user) {
-      // Return plain JSON so the hook can read data.error directly
-      return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 })
+    if (error) {
+      return NextResponse.json(
+        { success: false, error: { message: error.message } },
+        { status: 401 }
+      )
     }
 
-    const isValidPassword = await bcrypt.compare(body.password, user.passwordHash)
+    const user = data.user
+    const session = data.session
 
-    if (!isValidPassword) {
-      return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 })
+    // Fetch profile from profiles table
+    let profile = null
+    const { data: profileData } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', user.id)
+      .single()
+
+    if (profileData) {
+      profile = {
+        id: profileData.id,
+        email: profileData.email || user.email,
+        firstName: profileData.first_name || '',
+        lastName: profileData.last_name || '',
+        name: `${profileData.first_name || ''} ${profileData.last_name || ''}`.trim(),
+        role: profileData.role,
+        avatarUrl: profileData.avatar_url || null,
+        phone: profileData.phone || null,
+        bio: profileData.bio || null,
+        orgId: profileData.org_id || null,
+      }
     }
 
-    // PLACEHOLDER: replace with real JWT signing in production
-    const accessToken = `placeholder-token-${user.id}`
-    const refreshToken = `placeholder-refresh-${user.id}`
-
-    await db.auditLog.create({
+    const response = NextResponse.json({
+      success: true,
       data: {
-        action: 'LOGIN',
-        profileId: user.profile?.id,
-        resource: 'User',
-        resourceId: user.id,
-        ipAddress: request.headers.get('x-forwarded-for') || undefined,
-        userAgent: request.headers.get('user-agent') || undefined,
-      },
-    })
-
-    // Return shape that matches the hook's LoginResponse interface
-    return NextResponse.json(
-      {
+        tokens: {
+          accessToken: session?.access_token,
+          refreshToken: session?.refresh_token,
+          expiresIn: session?.expires_in,
+        },
         user: {
           id: user.id,
           email: user.email,
-          name: user.name,
-          avatarUrl: user.avatarUrl,
-          role: user.profile?.role ?? null,
-          profile: user.profile
-            ? {
-                id: user.profile.id,
-                role: user.profile.role,
-                registrationNumber: user.profile.registrationNumber,
-              }
-            : null,
-        },
-        tokens: {
-          accessToken,
-          refreshToken,
-          expiresIn: 86400,
+          name: profile?.name || user.user_metadata?.name || '',
+          avatarUrl: profile?.avatarUrl || null,
+          role: profile?.role || user.user_metadata?.role || 'STUDENT',
+          profile: profile,
         },
       },
-      { status: 200 }
-    )
+    })
+
+    // Set auth cookies
+    if (session?.access_token) {
+      const maxAge = body.rememberMe ? 60 * 60 * 24 * 30 : session.expires_in || 3600
+      response.cookies.set('orkestrando-token', session.access_token, {
+        path: '/',
+        maxAge,
+        httpOnly: false,
+        sameSite: 'lax',
+      })
+    }
+    if (session?.refresh_token) {
+      response.cookies.set('orkestrando-refresh-token', session.refresh_token, {
+        path: '/',
+        maxAge: 60 * 60 * 24 * 7,
+        httpOnly: true,
+        sameSite: 'lax',
+      })
+    }
+
+    return response
   } catch (error) {
-    return handleApiError(error)
+    console.error('[Auth Login Error]', error)
+    return NextResponse.json(
+      { success: false, error: { message: 'Internal server error' } },
+      { status: 500 }
+    )
   }
 }
 
-// ==================== GET /api/auth  (me / current user) ====================
+// ==================== GET /api/auth/me ====================
 
 export async function GET(request: NextRequest) {
   try {
-    const profile = getAuthProfile(request)
+    const token = request.cookies.get('orkestrando-token')?.value ||
+      request.headers.get('Authorization')?.replace('Bearer ', '')
 
-    const user = await db.user.findUnique({
-      where: { id: profile.userId },
-      include: { profile: true },
-    })
-
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    if (!token) {
+      return NextResponse.json(
+        { success: false, error: { message: 'Authentication required' } },
+        { status: 401 }
+      )
     }
 
-    // Flat shape – hook reads the object directly as the user profile
-    return NextResponse.json(
-      {
+    const { createClient } = await import('@supabase/supabase-js')
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    const supabase = createClient(supabaseUrl, supabaseKey)
+
+    const { data: { user }, error } = await supabase.auth.getUser(token)
+
+    if (error || !user) {
+      return NextResponse.json(
+        { success: false, error: { message: 'Invalid or expired token' } },
+        { status: 401 }
+      )
+    }
+
+    // Fetch profile
+    const { data: profileData } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', user.id)
+      .single()
+
+    const profile = profileData ? {
+      id: profileData.id,
+      email: profileData.email || user.email,
+      firstName: profileData.first_name || '',
+      lastName: profileData.last_name || '',
+      name: `${profileData.first_name || ''} ${profileData.last_name || ''}`.trim(),
+      role: profileData.role,
+      avatarUrl: profileData.avatar_url || null,
+      phone: profileData.phone || null,
+      bio: profileData.bio || null,
+      orgId: profileData.org_id || null,
+    } : null
+
+    return NextResponse.json({
+      success: true,
+      data: {
         id: user.id,
         email: user.email,
-        name: user.name,
-        avatarUrl: user.avatarUrl,
-        role: user.profile?.role ?? null,
-        profile: user.profile
-          ? {
-              id: user.profile.id,
-              role: user.profile.role,
-              registrationNumber: user.profile.registrationNumber,
-              phone: user.profile.phone,
-              bio: user.profile.bio,
-            }
-          : null,
+        name: profile?.name || user.user_metadata?.name || '',
+        avatarUrl: profile?.avatarUrl || null,
+        profile,
       },
-      { status: 200 }
+    })
+  } catch (error) {
+    console.error('[Auth Me Error]', error)
+    return NextResponse.json(
+      { success: false, error: { message: 'Internal server error' } },
+      { status: 500 }
     )
-  } catch (error) {
-    return handleApiError(error)
   }
-}
-
-// ==================== DELETE /api/auth  (logout) ====================
-
-export async function DELETE(request: NextRequest) {
-  try {
-    // Best-effort audit log; ignore if unauthenticated
-    try {
-      const profile = getAuthProfile(request)
-      await db.auditLog.create({
-        data: {
-          action: 'LOGOUT',
-          profileId: profile.id,
-          resource: 'User',
-          resourceId: profile.userId,
-          ipAddress: request.headers.get('x-forwarded-for') || undefined,
-          userAgent: request.headers.get('user-agent') || undefined,
-        },
-      })
-    } catch {
-      // Not authenticated – that's fine, just clear cookies
-    }
-
-    const response = NextResponse.json({ success: true }, { status: 200 })
-    response.cookies.delete('orkestrando-token')
-    response.cookies.delete('orkestrando-refresh-token')
-    return response
-  } catch (error) {
-    return handleApiError(error)
-  }
-}
-
-// ==================== OPTIONS (CORS preflight) ====================
-
-export async function OPTIONS() {
-  return NextResponse.json({}, { status: 204 })
 }

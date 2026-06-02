@@ -1,50 +1,75 @@
-import { NextRequest } from 'next/server'
-import { z } from 'zod'
-import { db } from '@/lib/db'
-import {
-  parseBody,
-  handleApiError,
-  apiResponse,
-  apiError,
-} from '@/lib/api-utils'
-
-// ==================== Schema ====================
-
-const refreshSchema = z.object({
-  refreshToken: z.string().min(1, 'Refresh token is required'),
-})
+import { NextRequest, NextResponse } from 'next/server'
 
 // ==================== POST /api/auth/refresh ====================
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await parseBody(request, refreshSchema)
+    const refreshToken =
+      request.cookies.get('orkestrando-refresh-token')?.value ||
+      (await request.json()).refreshToken
 
-    // PLACEHOLDER: In production, verify the refresh token JWT
-    // const payload = jwt.verify(body.refreshToken, SECRET)
-    // const user = await db.user.findUnique({ where: { id: payload.userId } })
-
-    // For now, extract user ID from placeholder token format
-    const userId = body.refreshToken.replace('placeholder-refresh-', '')
-
-    const user = await db.user.findUnique({
-      where: { id: userId },
-      include: { profile: true },
-    })
-
-    if (!user) {
-      return apiError('Invalid refresh token', 401)
+    if (!refreshToken) {
+      return NextResponse.json(
+        { success: false, error: { message: 'Refresh token is required' } },
+        { status: 401 }
+      )
     }
 
-    // PLACEHOLDER: Generate new JWT tokens
-    const newToken = `placeholder-token-${user.id}`
-    const newRefreshToken = `placeholder-refresh-${user.id}`
+    const { createClient } = await import('@supabase/supabase-js')
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    const supabase = createClient(supabaseUrl, supabaseKey)
 
-    return apiResponse({
-      token: newToken,
-      refreshToken: newRefreshToken,
+    const { data, error } = await supabase.auth.refreshSession({
+      refresh_token: refreshToken,
     })
+
+    if (error) {
+      return NextResponse.json(
+        { success: false, error: { message: 'Invalid or expired refresh token' } },
+        { status: 401 }
+      )
+    }
+
+    const session = data.session
+
+    if (!session) {
+      return NextResponse.json(
+        { success: false, error: { message: 'Could not refresh session' } },
+        { status: 401 }
+      )
+    }
+
+    const response = NextResponse.json({
+      success: true,
+      data: {
+        tokens: {
+          accessToken: session.access_token,
+          refreshToken: session.refresh_token,
+          expiresIn: session.expires_in,
+        },
+      },
+    })
+
+    response.cookies.set('orkestrando-token', session.access_token, {
+      path: '/',
+      maxAge: session.expires_in || 3600,
+      httpOnly: false,
+      sameSite: 'lax',
+    })
+    response.cookies.set('orkestrando-refresh-token', session.refresh_token, {
+      path: '/',
+      maxAge: 60 * 60 * 24 * 7,
+      httpOnly: true,
+      sameSite: 'lax',
+    })
+
+    return response
   } catch (error) {
-    return handleApiError(error)
+    console.error('[Auth Refresh Error]', error)
+    return NextResponse.json(
+      { success: false, error: { message: 'Internal server error' } },
+      { status: 500 }
+    )
   }
 }
