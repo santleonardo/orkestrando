@@ -8,7 +8,7 @@ import React, {
   useCallback,
   useMemo,
 } from 'react'
-import type { Profile, Role, AuthTokens, JwtPayload } from '@/types'
+import type { Profile, Role } from '@/types'
 
 // -----------------------------------------------------------------------------
 // Types
@@ -23,7 +23,9 @@ interface AuthState {
 
 interface AuthContextValue extends AuthState {
   login: (email: string, password: string, rememberMe?: boolean) => Promise<void>
-  register: (data: RegisterData) => Promise<{ success: boolean; message: string }>
+  register: (
+    data: RegisterData
+  ) => Promise<{ success: boolean; message: string }>
   logout: () => Promise<void>
   refreshProfile: () => Promise<void>
   clearError: () => void
@@ -38,12 +40,6 @@ interface RegisterData {
   role?: string
 }
 
-// Shape returned by POST /api/auth and POST /api/auth/register
-interface LoginResponse {
-  user: Profile
-  tokens: AuthTokens
-}
-
 // -----------------------------------------------------------------------------
 // Context
 // -----------------------------------------------------------------------------
@@ -55,7 +51,9 @@ const REFRESH_TOKEN_KEY = 'orkestrando-refresh-token'
 
 function getCookieToken(): string | null {
   if (typeof document === 'undefined') return null
-  const match = document.cookie.match(new RegExp('(^| )' + TOKEN_KEY + '=([^;]+)'))
+  const match = document.cookie.match(
+    new RegExp('(^| )' + TOKEN_KEY + '=([^;]+)')
+  )
   return match ? match[2] : null
 }
 
@@ -68,46 +66,16 @@ function deleteCookieToken(): void {
   document.cookie = `${REFRESH_TOKEN_KEY}=; path=/; max-age=0`
 }
 
-function decodeJwtPayload(token: string): JwtPayload | null {
+function decodeJwtPayload(token: string): Record<string, unknown> | null {
   try {
     const parts = token.split('.')
     if (parts.length !== 3) return null
-    return JSON.parse(Buffer.from(parts[1], 'base64url').toString('utf-8'))
+    const payload = JSON.parse(
+      Buffer.from(parts[1], 'base64url').toString('utf-8')
+    )
+    return payload
   } catch {
     return null
-  }
-}
-
-function isTokenExpired(token: string): boolean {
-  const payload = decodeJwtPayload(token)
-  if (!payload?.exp) return true
-  return Date.now() >= payload.exp * 1000
-}
-
-/**
- * Extract a human-readable message from any API error response shape.
- * Handles: { error: string }, { error: { message: string } }, { message: string }
- */
-function extractErrorMessage(data: Record<string, unknown>, fallback: string): string {
-  if (typeof data?.error === 'string') return data.error
-  if (typeof (data?.error as Record<string, unknown>)?.message === 'string') {
-    return (data.error as Record<string, unknown>).message as string
-  }
-  if (typeof data?.message === 'string') return data.message
-  return fallback
-}
-
-/** Resolve role → dashboard path. Pages live directly under / (route group (dashboard)). */
-function dashboardPathForRole(role: string | null | undefined): string {
-  switch (role) {
-    case 'COORDINATOR':
-      return '/coordinator'
-    case 'PROFESSOR':
-      return '/professor'
-    case 'STUDENT':
-      return '/student'
-    default:
-      return '/coordinator' // safe fallback
   }
 }
 
@@ -123,7 +91,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     error: null,
   })
 
-  // Initial auth check
+  // Load user profile from /api/auth/me using existing token
+  const loadUserFromToken = useCallback(async (token: string) => {
+    try {
+      const res = await fetch('/api/auth/me', {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        credentials: 'include',
+      })
+
+      if (res.ok) {
+        const data = await res.json()
+        const user = data.data || data.user || data.profile
+        if (user) {
+          setState({
+            user,
+            isAuthenticated: true,
+            isLoading: false,
+            error: null,
+          })
+          return true
+        }
+      }
+      return false
+    } catch {
+      return false
+    }
+  }, [])
+
+  // Initialize auth from cookie token
   useEffect(() => {
     const initializeAuth = async () => {
       const token = getCookieToken()
@@ -132,7 +130,47 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return
       }
 
-      if (isTokenExpired(token)) {
+      // Decode JWT to check expiry
+      const payload = decodeJwtPayload(token)
+      if (payload?.exp) {
+        const isExpired = Date.now() >= (payload.exp as number) * 1000
+        if (isExpired) {
+          // Try refresh
+          try {
+            const refreshRes = await fetch('/api/auth/refresh', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              credentials: 'include',
+            })
+            if (refreshRes.ok) {
+              const refreshData = await refreshRes.json()
+              if (refreshData.data?.tokens?.accessToken) {
+                setCookieToken(
+                  refreshData.data.tokens.accessToken,
+                  refreshData.data.tokens.expiresIn || 3600
+                )
+                await loadUserFromToken(refreshData.data.tokens.accessToken)
+                return
+              }
+            }
+          } catch {
+            // Refresh failed
+          }
+          deleteCookieToken()
+          setState((prev) => ({
+            ...prev,
+            user: null,
+            isAuthenticated: false,
+            isLoading: false,
+          }))
+          return
+        }
+      }
+
+      // Token exists and not expired - fetch user profile
+      const loaded = await loadUserFromToken(token)
+      if (!loaded) {
+        // Try refresh
         try {
           const refreshRes = await fetch('/api/auth/refresh', {
             method: 'POST',
@@ -140,62 +178,45 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             credentials: 'include',
           })
           if (refreshRes.ok) {
-            const data = await refreshRes.json()
-            if (data.tokens?.accessToken) {
-              setCookieToken(data.tokens.accessToken, data.tokens.expiresIn || 86400)
+            const refreshData = await refreshRes.json()
+            if (refreshData.data?.tokens?.accessToken) {
+              setCookieToken(
+                refreshData.data.tokens.accessToken,
+                refreshData.data.tokens.expiresIn || 3600
+              )
+              await loadUserFromToken(refreshData.data.tokens.accessToken)
+              return
             }
-          } else {
-            deleteCookieToken()
-            setState((prev) => ({ ...prev, user: null, isAuthenticated: false, isLoading: false }))
-            return
           }
         } catch {
-          deleteCookieToken()
-          setState((prev) => ({ ...prev, user: null, isAuthenticated: false, isLoading: false }))
-          return
+          // Refresh failed
         }
-      }
-
-      // FIX: /api/auth (GET) – was incorrectly called as /api/auth/me
-      try {
-        const profileRes = await fetch('/api/auth', {
-          headers: {
-            'Content-Type': 'application/json',
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
-          credentials: 'include',
-        })
-
-        if (profileRes.ok) {
-          const data = await profileRes.json()
-          // GET /api/auth returns the user object directly (flat shape)
-          if (data?.id) {
-            setState({ user: data, isAuthenticated: true, isLoading: false, error: null })
-          } else {
-            deleteCookieToken()
-            setState((prev) => ({ ...prev, user: null, isAuthenticated: false, isLoading: false }))
-          }
-        } else {
-          deleteCookieToken()
-          setState((prev) => ({ ...prev, user: null, isAuthenticated: false, isLoading: false }))
-        }
-      } catch {
-        setState((prev) => ({ ...prev, isLoading: false, error: null }))
+        deleteCookieToken()
+        setState((prev) => ({
+          ...prev,
+          user: null,
+          isAuthenticated: false,
+          isLoading: false,
+        }))
       }
     }
 
     initializeAuth()
-  }, [])
+  }, [loadUserFromToken])
 
-  // Auto-refresh before token expiry
+  // Auto-refresh token before expiry
   useEffect(() => {
     if (!state.isAuthenticated) return
+
     const token = getCookieToken()
     if (!token) return
+
     const payload = decodeJwtPayload(token)
     if (!payload?.exp) return
-    const expiresIn = payload.exp * 1000 - Date.now()
+
+    const expiresIn = (payload.exp as number) * 1000 - Date.now()
     const refreshBefore = expiresIn - 5 * 60 * 1000
+
     if (refreshBefore > 0) {
       const timer = setTimeout(async () => {
         try {
@@ -206,126 +227,173 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           })
           if (res.ok) {
             const data = await res.json()
-            if (data.tokens?.accessToken) {
-              setCookieToken(data.tokens.accessToken, data.tokens.expiresIn || 86400)
+            if (data.data?.tokens?.accessToken) {
+              setCookieToken(
+                data.data.tokens.accessToken,
+                data.data.tokens.expiresIn || 3600
+              )
             }
           }
         } catch {
-          // Silently ignore
+          // Silently fail refresh
         }
       }, refreshBefore)
+
       return () => clearTimeout(timer)
     }
   }, [state.isAuthenticated])
 
-  const login = useCallback(async (email: string, password: string, rememberMe = false) => {
-    setState((prev) => ({ ...prev, isLoading: true, error: null }))
+  const login = useCallback(
+    async (email: string, password: string, rememberMe = false) => {
+      setState((prev) => ({ ...prev, isLoading: true, error: null }))
 
-    try {
-      // FIX: was /api/auth/login – the correct endpoint is POST /api/auth
-      const res = await fetch('/api/auth', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ email, password, rememberMe }),
-      })
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ email, password, rememberMe }),
+        })
 
-      const data = await res.json()
+        const data = await res.json()
 
-      if (!res.ok) {
-        throw new Error(extractErrorMessage(data, 'Falha ao fazer login'))
+        if (!res.ok) {
+          throw new Error(data.error?.message || 'Falha ao fazer login')
+        }
+
+        // Set token cookie from response
+        if (data.data?.tokens?.accessToken) {
+          const maxAge = rememberMe
+            ? 60 * 60 * 24 * 30
+            : data.data.tokens.expiresIn || 3600
+          setCookieToken(data.data.tokens.accessToken, maxAge)
+        }
+
+        const user = data.data.user
+        setState({
+          user,
+          isAuthenticated: true,
+          isLoading: false,
+          error: null,
+        })
+
+        // Redirect based on role
+        const role = (user?.role || user?.profile?.role || 'STUDENT') as Role
+        if (role === 'SUPER_ADMIN') {
+          window.location.href = '/dashboard'
+        } else if (role === 'COORDINATOR') {
+          window.location.href = '/dashboard/coordinator'
+        } else if (role === 'PROFESSOR') {
+          window.location.href = '/dashboard/professor'
+        } else if (role === 'STUDENT') {
+          window.location.href = '/dashboard/student'
+        } else {
+          window.location.href = '/dashboard'
+        }
+      } catch (err) {
+        setState((prev) => ({
+          ...prev,
+          isLoading: false,
+          error: err instanceof Error ? err.message : 'Erro inesperado ao fazer login',
+        }))
+        throw err
       }
+    },
+    []
+  )
 
-      const loginData = data as LoginResponse
+  const register = useCallback(
+    async (
+      data: RegisterData
+    ): Promise<{ success: boolean; message: string }> => {
+      setState((prev) => ({ ...prev, isLoading: true, error: null }))
 
-      if (loginData.tokens?.accessToken) {
-        const maxAge = rememberMe
-          ? 60 * 60 * 24 * 30 // 30 days
-          : loginData.tokens.expiresIn || 86400
-        setCookieToken(loginData.tokens.accessToken, maxAge)
+      try {
+        const res = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify(data),
+        })
+
+        const responseData = await res.json()
+
+        if (!res.ok) {
+          throw new Error(
+            responseData.error?.message || 'Falha ao registrar'
+          )
+        }
+
+        setState((prev) => ({ ...prev, isLoading: false }))
+
+        return {
+          success: true,
+          message:
+            responseData.message ||
+            'Registro realizado com sucesso! Verifique seu e-mail.',
+        }
+      } catch (err) {
+        setState((prev) => ({
+          ...prev,
+          isLoading: false,
+          error:
+            err instanceof Error ? err.message : 'Erro inesperado ao registrar',
+        }))
+        return {
+          success: false,
+          message:
+            err instanceof Error ? err.message : 'Erro inesperado ao registrar',
+        }
       }
-
-      setState({ user: loginData.user, isAuthenticated: true, isLoading: false, error: null })
-
-      // FIX: redirect to actual route group paths (no /dashboard prefix)
-      window.location.href = dashboardPathForRole(loginData.user?.role as string)
-    } catch (err) {
-      setState((prev) => ({
-        ...prev,
-        isLoading: false,
-        error: err instanceof Error ? err.message : 'Erro inesperado ao fazer login',
-      }))
-      throw err
-    }
-  }, [])
-
-  const register = useCallback(async (data: RegisterData): Promise<{ success: boolean; message: string }> => {
-    setState((prev) => ({ ...prev, isLoading: true, error: null }))
-
-    try {
-      const res = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify(data),
-      })
-
-      const responseData = await res.json()
-
-      if (!res.ok) {
-        throw new Error(extractErrorMessage(responseData, 'Falha ao registrar'))
-      }
-
-      setState((prev) => ({ ...prev, isLoading: false }))
-      return {
-        success: true,
-        message: responseData.message || 'Registro realizado com sucesso! Verifique seu e-mail.',
-      }
-    } catch (err) {
-      setState((prev) => ({
-        ...prev,
-        isLoading: false,
-        error: err instanceof Error ? err.message : 'Erro inesperado ao registrar',
-      }))
-      return {
-        success: false,
-        message: err instanceof Error ? err.message : 'Erro inesperado ao registrar',
-      }
-    }
-  }, [])
+    },
+    []
+  )
 
   const logout = useCallback(async () => {
     try {
-      // FIX: was /api/auth/logout (didn't exist) – use DELETE /api/auth
-      await fetch('/api/auth', { method: 'DELETE', credentials: 'include' })
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include',
+      })
     } catch {
-      // Continue with local cleanup even if the request fails
+      // Continue with local cleanup even if API call fails
     }
 
     deleteCookieToken()
-    setState({ user: null, isAuthenticated: false, isLoading: false, error: null })
+    setState({
+      user: null,
+      isAuthenticated: false,
+      isLoading: false,
+      error: null,
+    })
+
     window.location.href = '/login'
   }, [])
 
   const refreshProfile = useCallback(async () => {
     try {
       const token = getCookieToken()
-      // FIX: was /api/auth/me – correct path is GET /api/auth
-      const res = await fetch('/api/auth', {
+      const res = await fetch('/api/auth/me', {
         headers: {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         credentials: 'include',
       })
+
       if (res.ok) {
         const data = await res.json()
-        if (data?.id) {
-          setState((prev) => ({ ...prev, user: data, isAuthenticated: true }))
+        const user = data.data || data.user || data.profile
+        if (user) {
+          setState((prev) => ({
+            ...prev,
+            user,
+            isAuthenticated: true,
+          }))
         }
       }
     } catch {
-      // Silently ignore
+      // Silently fail
     }
   }, [])
 
@@ -339,7 +407,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [state.user])
 
   const value = useMemo<AuthContextValue>(
-    () => ({ ...state, login, register, logout, refreshProfile, clearError, role }),
+    () => ({
+      ...state,
+      login,
+      register,
+      logout,
+      refreshProfile,
+      clearError,
+      role,
+    }),
     [state, login, register, logout, refreshProfile, clearError, role]
   )
 
@@ -353,6 +429,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 export function useAuth(): AuthContextValue {
   const context = useContext(AuthContext)
   if (context === undefined) {
+    // Return safe defaults during SSR/prerendering when no AuthProvider is present
     return {
       user: null,
       isAuthenticated: false,
@@ -368,6 +445,10 @@ export function useAuth(): AuthContextValue {
   }
   return context
 }
+
+// -----------------------------------------------------------------------------
+// Utility: Get current auth token from cookies (for use in API calls)
+// -----------------------------------------------------------------------------
 
 export function getAuthToken(): string | null {
   if (typeof document === 'undefined') return null
