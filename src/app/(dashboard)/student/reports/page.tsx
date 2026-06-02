@@ -31,8 +31,7 @@ import {
   FileSpreadsheet,
   FileDown,
   Printer,
-  AcademicCap,
-  Clock,
+ Clock,
   Target,
 } from 'lucide-react'
 
@@ -242,7 +241,7 @@ export default function StudentReportsPage() {
           <Card className="relative overflow-hidden">
             <CardContent className="p-5">
               <div className="rounded-lg bg-blue-100 p-2.5 text-blue-600 dark:bg-blue-950 dark:text-blue-300 w-fit">
-                <AcademicCap className="size-5" />
+                <GraduationCap className="size-5" />
               </div>
               <p className="mt-3 text-2xl font-bold text-foreground">{summary.completedCredits}/{summary.totalCredits}</p>
               <p className="text-sm text-muted-foreground">Credits Completed</p>
