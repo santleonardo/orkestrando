@@ -323,6 +323,18 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const isMobile = useIsMobile()
   const { user, role, logout } = useAuth()
 
+  // Compute the base path for the current role
+  const roleBasePath = useMemo(() => {
+    switch (role) {
+      case 'COORDINATOR': return '/coordinator'
+      case 'PROFESSOR': return '/professor'
+      case 'STUDENT': return '/student'
+      case 'ASSISTANT': return '/assistant'
+      case 'SUPER_ADMIN': return '/'
+      default: return '/'
+    }
+  }, [role])
+
   // Close mobile sheet on route change
   const [prevPathname, setPrevPathname] = useState(pathname)
   if (prevPathname !== pathname) {
@@ -432,7 +444,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             {/* Notifications */}
             <Tooltip delayDuration={0}>
               <TooltipTrigger asChild>
-                <Link href="/notifications">
+                <Link href={roleBasePath === '/' ? '/' : roleBasePath}>
                   <Button
                     variant="ghost"
                     size="icon"
@@ -452,7 +464,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             {/* Messages */}
             <Tooltip delayDuration={0}>
               <TooltipTrigger asChild>
-                <Link href="/messages">
+                <Link href={roleBasePath === '/' ? '/' : `${roleBasePath}/messages`}>
                   <Button
                     variant="ghost"
                     size="icon"
