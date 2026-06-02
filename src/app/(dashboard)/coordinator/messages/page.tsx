@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import {
   Send, Search, Plus, Megaphone, Users, MessageSquare, Bell,
   Paperclip, Check, CheckCheck, MoreVertical, ArrowLeft, Smile,
@@ -363,8 +363,8 @@ export default function CoordinatorMessagesPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setAnnouncementOpen(false)}>Cancel</Button>
-            <Button onClick={handleCreateAnnouncement} disabled={isSubmitting || !announcementForm.title || !announcementForm.content} className="bg-violet-600 hover:bg-violet-700 gap-2">
-              {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Megaphone className="h-4 w-4" />}
+            <Button onClick={handleCreateAnnouncement} disabled={isSending || !announcementForm.title || !announcementForm.content} className="bg-violet-600 hover:bg-violet-700 gap-2">
+              {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Megaphone className="h-4 w-4" />}
               Send Announcement
             </Button>
           </DialogFooter>
