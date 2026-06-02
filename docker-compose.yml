@@ -1,0 +1,90 @@
+# =============================================================================
+# ORKESTRANDO - Local Development Docker Compose
+# PostgreSQL 16 + Supabase Studio + Redis (optional)
+# =============================================================================
+
+services:
+  # ---------------------------------------------------------------------------
+  # PostgreSQL 16
+  # ---------------------------------------------------------------------------
+  postgres:
+    image: postgres:16-alpine
+    container_name: orkestrando-postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: orkestrando
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./supabase/migrations:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ---------------------------------------------------------------------------
+  # Supabase Studio (optional - web UI for database management)
+  # ---------------------------------------------------------------------------
+  supabase-studio:
+    image: supabase/studio:latest
+    container_name: orkestrando-studio
+    restart: unless-stopped
+    ports:
+      - "5433:3000"
+    environment:
+      STUDIO_DEFAULT_ORG: ORKESTRANDO
+      STUDIO_DEFAULT_PROJECT: Academic Management
+      STUDIO_PG_META_URL: postgres://postgres:postgres@postgres:5432/orkestrando
+      POSTGRES_PASSWORD: postgres
+      SUPABASE_URL: http://localhost:5433
+      SUPABASE_PUBLIC_URL: http://localhost:5433
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # ---------------------------------------------------------------------------
+  # Redis (optional - for caching and session management)
+  # ---------------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: orkestrando-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ---------------------------------------------------------------------------
+  # pgAdmin (optional - PostgreSQL web admin)
+  # ---------------------------------------------------------------------------
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: orkestrando-pgadmin
+    restart: unless-stopped
+    ports:
+      - "5050:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@orkestrando.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  pgadmin_data:
+    driver: local
