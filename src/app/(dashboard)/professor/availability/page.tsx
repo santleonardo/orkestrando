@@ -44,7 +44,7 @@ const WEEKDAY_FULL: Record<string, string> = {
   SATURDAY: 'Saturday',
 }
 
-const TIME_SLOTS = []
+const TIME_SLOTS: string[] = []
 for (let hour = 7; hour <= 22; hour++) {
   TIME_SLOTS.push(`${String(hour).padStart(2, '0')}:00`)
 }
