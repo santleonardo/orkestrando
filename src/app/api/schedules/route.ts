@@ -92,7 +92,7 @@ export async function GET(request: NextRequest) {
               type: 'TEACHER_CONFLICT',
               session1Id: s1.id,
               session2Id: s2.id,
-              description: `Teacher conflict: ${s1.class.`${​teacher.profile?.firstName ?? ""} ${teacher.profile?.lastName ?? ""}`.trim()} has overlapping sessions on ${date1}`,
+              description: `Teacher conflict: ${`${s1.class.teacher?.profile?.firstName ?? ""} ${s1.class.teacher?.profile?.lastName ?? ""}`.trim()} has overlapping sessions on ${date1}`,
             })
           }
         }
