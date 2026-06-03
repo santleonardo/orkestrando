@@ -383,7 +383,7 @@ export default function ProfessorAvailabilityPage() {
         <div className="flex flex-wrap items-center gap-2">
           <Select value={selectedSemester} onValueChange={setSelectedSemester}>
             <SelectTrigger className="w-48">
-              <SelectValue placeholder="Select semester" />
+              <SelectValue placeholder="Selecione o semestre" />
             </SelectTrigger>
             <SelectContent>
               {semesters.map((s) => (
@@ -642,7 +642,7 @@ export default function ProfessorAvailabilityPage() {
               <Label>Reason</Label>
               <Select value={blockReason} onValueChange={setBlockReason}>
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select reason" />
+                  <SelectValue placeholder="Selecione o motivo" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="VACATION">Vacation</SelectItem>

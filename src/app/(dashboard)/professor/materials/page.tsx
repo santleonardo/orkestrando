@@ -329,7 +329,7 @@ export default function ProfessorMaterialsPage() {
           <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <input
             type="text"
-            placeholder="Search materials..."
+            placeholder="Buscar materiais..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="h-9 w-full rounded-md border border-input bg-transparent pl-9 pr-3 text-sm shadow-xs outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-200 dark:focus:ring-violet-800"
@@ -337,7 +337,7 @@ export default function ProfessorMaterialsPage() {
         </div>
         <Select value={subjectFilter} onValueChange={setSubjectFilter}>
           <SelectTrigger className="w-52">
-            <SelectValue placeholder="All Subjects" />
+            <SelectValue placeholder="Todas as disciplinas" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Subjects</SelectItem>
@@ -348,7 +348,7 @@ export default function ProfessorMaterialsPage() {
         </Select>
         <Select value={typeFilter} onValueChange={setTypeFilter}>
           <SelectTrigger className="w-40">
-            <SelectValue placeholder="All Types" />
+            <SelectValue placeholder="Todos os tipos" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Types</SelectItem>
@@ -546,7 +546,7 @@ export default function ProfessorMaterialsPage() {
                   <div className="space-y-1.5">
                     <label className="text-sm font-medium text-foreground">Title</label>
                     <Input
-                      placeholder="Material title (auto-filled from filename)"
+                      placeholder="Título do material (preenchido automaticamente)"
                       value={uploadTitle}
                       onChange={(e) => setUploadTitle(e.target.value)}
                     />
@@ -554,7 +554,7 @@ export default function ProfessorMaterialsPage() {
                   <div className="space-y-1.5">
                     <label className="text-sm font-medium text-foreground">Description</label>
                     <Input
-                      placeholder="Brief description of the material"
+                      placeholder="Breve descrição do material"
                       value={uploadDescription}
                       onChange={(e) => setUploadDescription(e.target.value)}
                     />
@@ -563,7 +563,7 @@ export default function ProfessorMaterialsPage() {
                     <label className="text-sm font-medium text-foreground">Class</label>
                     <Select value={uploadClassId} onValueChange={setUploadClassId}>
                       <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Select a class" />
+                        <SelectValue placeholder="Selecione uma turma" />
                       </SelectTrigger>
                       <SelectContent>
                         {classes.map((c) => (

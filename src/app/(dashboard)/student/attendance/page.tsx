@@ -257,7 +257,7 @@ export default function StudentAttendancePage() {
         <div className="flex items-center gap-2">
           <Select value={subjectFilter} onValueChange={setSubjectFilter}>
             <SelectTrigger className="w-52">
-              <SelectValue placeholder="All Subjects" />
+              <SelectValue placeholder="Todas as disciplinas" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Subjects</SelectItem>

@@ -279,7 +279,7 @@ export default function StudentReportsPage() {
         <label className="text-sm font-medium text-muted-foreground">Semester:</label>
         <Select value={semesterFilter} onValueChange={setSemesterFilter}>
           <SelectTrigger className="w-48">
-            <SelectValue placeholder="All Semesters" />
+            <SelectValue placeholder="Todos os semestres" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Semesters</SelectItem>

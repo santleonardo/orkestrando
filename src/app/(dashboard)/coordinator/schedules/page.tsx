@@ -266,7 +266,7 @@ export default function ScheduleManagementPage() {
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search subject, teacher, room..."
+                  placeholder="Buscar disciplina, professor, sala..."
                   className="pl-9 w-72"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -274,7 +274,7 @@ export default function ScheduleManagementPage() {
               </div>
               <Select value={filterTeacher} onValueChange={setFilterTeacher}>
                 <SelectTrigger className="w-44">
-                  <SelectValue placeholder="Filter by teacher" />
+                  <SelectValue placeholder="Filtrar por professor" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Teachers</SelectItem>
@@ -285,7 +285,7 @@ export default function ScheduleManagementPage() {
               </Select>
               <Select value={filterRoom} onValueChange={setFilterRoom}>
                 <SelectTrigger className="w-40">
-                  <SelectValue placeholder="Filter by room" />
+                  <SelectValue placeholder="Filtrar por sala" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Rooms</SelectItem>
@@ -296,7 +296,7 @@ export default function ScheduleManagementPage() {
               </Select>
               <Select value={filterSemester} onValueChange={setFilterSemester}>
                 <SelectTrigger className="w-36">
-                  <SelectValue placeholder="Semester" />
+                  <SelectValue placeholder="Semestre" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="2024.1">2024.1</SelectItem>

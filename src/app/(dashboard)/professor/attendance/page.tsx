@@ -322,7 +322,7 @@ export default function ProfessorAttendancePage() {
         </div>
         <Select value={classFilter} onValueChange={setClassFilter}>
           <SelectTrigger className="w-56">
-            <SelectValue placeholder="All Classes" />
+            <SelectValue placeholder="Todas as turmas" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Classes</SelectItem>
@@ -495,7 +495,7 @@ export default function ProfessorAttendancePage() {
                       </button>
                     </div>
                     <Input
-                      placeholder="Notes..."
+                      placeholder="Observações..."
                       value={student.notes}
                       onChange={(e) => updateStudentNote(student.enrollmentId, e.target.value)}
                       className="h-8 w-32 text-xs"

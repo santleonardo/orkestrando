@@ -168,10 +168,10 @@ export default function SubjectManagementPage() {
       <Card className="border-violet-200 dark:border-violet-800/50">
         <CardContent className="p-4">
           <div className="flex flex-col gap-3 md:flex-row md:items-center">
-            <div className="relative flex-1"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input placeholder="Search subjects..." className="pl-9" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} /></div>
-            <Select value={filterCourse} onValueChange={setFilterCourse}><SelectTrigger className="w-48"><SelectValue placeholder="Course" /></SelectTrigger><SelectContent><SelectItem value="all">All Courses</SelectItem>{mockCourses.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent></Select>
-            <Select value={filterSemester} onValueChange={setFilterSemester}><SelectTrigger className="w-36"><SelectValue placeholder="Semester" /></SelectTrigger><SelectContent><SelectItem value="all">All</SelectItem>{[1, 2, 3, 4, 5, 6, 7, 8].map((s) => <SelectItem key={s} value={String(s)}>{s}</SelectItem>)}</SelectContent></Select>
-            <Select value={filterActive} onValueChange={setFilterActive}><SelectTrigger className="w-32"><SelectValue placeholder="Status" /></SelectTrigger><SelectContent><SelectItem value="all">All</SelectItem><SelectItem value="active">Active</SelectItem><SelectItem value="inactive">Inactive</SelectItem></SelectContent></Select>
+            <div className="relative flex-1"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input placeholder="Buscar disciplinas..." className="pl-9" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} /></div>
+            <Select value={filterCourse} onValueChange={setFilterCourse}><SelectTrigger className="w-48"><SelectValue placeholder="Curso" /></SelectTrigger><SelectContent><SelectItem value="all">Todos os cursos</SelectItem>{mockCourses.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent></Select>
+            <Select value={filterSemester} onValueChange={setFilterSemester}><SelectTrigger className="w-36"><SelectValue placeholder="Semestre" /></SelectTrigger><SelectContent><SelectItem value="all">Todos</SelectItem>{[1, 2, 3, 4, 5, 6, 7, 8].map((s) => <SelectItem key={s} value={String(s)}>{s}</SelectItem>)}</SelectContent></Select>
+            <Select value={filterActive} onValueChange={setFilterActive}><SelectTrigger className="w-32"><SelectValue placeholder="Status" /></SelectTrigger><SelectContent><SelectItem value="all">Todos</SelectItem><SelectItem value="active">Ativo</SelectItem><SelectItem value="inactive">Inativo</SelectItem></SelectContent></Select>
           </div>
         </CardContent>
       </Card>
@@ -225,9 +225,9 @@ export default function SubjectManagementPage() {
               <div className="space-y-2"><Label>Subject Code</Label><Input placeholder="e.g. CS201" value={formData.code} onChange={(e) => setFormData({ ...formData, code: e.target.value })} /></div>
               <div className="space-y-2"><Label>Subject Name</Label><Input placeholder="e.g. Data Structures" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} /></div>
             </div>
-            <div className="space-y-2"><Label>Description</Label><Textarea placeholder="Subject description..." rows={3} value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} /></div>
+            <div className="space-y-2"><Label>Descrição</Label><Textarea placeholder="Descrição da disciplina..." rows={3} value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} /></div>
             <div className="grid grid-cols-3 gap-4">
-              <div className="space-y-2"><Label>Course</Label><Select value={formData.courseId} onValueChange={(v) => setFormData({ ...formData, courseId: v })}><SelectTrigger><SelectValue placeholder="Select course" /></SelectTrigger><SelectContent>{mockCourses.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent></Select></div>
+              <div className="space-y-2"><Label>Curso</Label><Select value={formData.courseId} onValueChange={(v) => setFormData({ ...formData, courseId: v })}><SelectTrigger><SelectValue placeholder="Selecione o curso" /></SelectTrigger><SelectContent>{mockCourses.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent></Select></div>
               <div className="space-y-2"><Label>Credits</Label><Input type="number" min={1} max={10} value={formData.credits} onChange={(e) => setFormData({ ...formData, credits: parseInt(e.target.value) || 0 })} /></div>
               <div className="space-y-2"><Label>Workload (hours)</Label><Input type="number" min={1} value={formData.workload} onChange={(e) => setFormData({ ...formData, workload: parseInt(e.target.value) || 0 })} /></div>
             </div>

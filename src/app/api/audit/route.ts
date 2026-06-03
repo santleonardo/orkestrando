@@ -7,6 +7,8 @@ import {
   apiResponse,
   paginatedResponse,
   paginationSchema,
+  getAuthProfile,
+  requirePermission,
 } from '@/lib/api-utils'
 
 // ==================== Schema ====================
@@ -25,6 +27,8 @@ const auditQuerySchema = z.object({
 
 export async function GET(request: NextRequest) {
   try {
+    const auth = getAuthProfile(request)
+    requirePermission(auth, 'COORDINATOR')
     const query = parseQuery(request, auditQuerySchema)
     const { page, pageSize, action, profileId, resource, resourceId, dateFrom, dateTo } = query
 

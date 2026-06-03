@@ -173,8 +173,8 @@ export default function TeacherManagementPage() {
       <Card className="border-violet-200 dark:border-violet-800/50">
         <CardContent className="p-4">
           <div className="flex flex-col gap-3 md:flex-row md:items-center">
-            <div className="relative flex-1"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input placeholder="Search by name or email..." className="pl-9" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} /></div>
-            <Select value={filterDept} onValueChange={setFilterDept}><SelectTrigger className="w-48"><SelectValue placeholder="Department" /></SelectTrigger><SelectContent><SelectItem value="all">All Departments</SelectItem>{DEPARTMENTS.map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent></Select>
+            <div className="relative flex-1"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input placeholder="Buscar por nome ou e-mail..." className="pl-9" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} /></div>
+            <Select value={filterDept} onValueChange={setFilterDept}><SelectTrigger className="w-48"><SelectValue placeholder="Departamento" /></SelectTrigger><SelectContent><SelectItem value="all">Todos os departamentos</SelectItem>{DEPARTMENTS.map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent></Select>
           </div>
         </CardContent>
       </Card>
@@ -235,14 +235,14 @@ export default function TeacherManagementPage() {
           <DialogHeader><DialogTitle className="text-violet-700">{createOpen ? 'Create New Teacher' : 'Edit Teacher'}</DialogTitle><DialogDescription>{createOpen ? 'Add a new teacher to the institution.' : `Editing ${selectedTeacher?.firstName} ${selectedTeacher?.lastName}`}</DialogDescription></DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2"><Label>First Name</Label><Input placeholder="First name" value={formData.firstName} onChange={(e) => setFormData({ ...formData, firstName: e.target.value })} /></div>
-              <div className="space-y-2"><Label>Last Name</Label><Input placeholder="Last name" value={formData.lastName} onChange={(e) => setFormData({ ...formData, lastName: e.target.value })} /></div>
+              <div className="space-y-2"><Label>Nome</Label><Input placeholder="Nome" value={formData.firstName} onChange={(e) => setFormData({ ...formData, firstName: e.target.value })} /></div>
+              <div className="space-y-2"><Label>Sobrenome</Label><Input placeholder="Sobrenome" value={formData.lastName} onChange={(e) => setFormData({ ...formData, lastName: e.target.value })} /></div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2"><Label>Email</Label><Input type="email" placeholder="teacher@uni.edu" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} /></div>
               <div className="space-y-2"><Label>Phone</Label><Input placeholder="(11) 99999-0000" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} /></div>
             </div>
-            <div className="space-y-2"><Label>Department</Label><Select value={formData.department} onValueChange={(v) => setFormData({ ...formData, department: v })}><SelectTrigger><SelectValue placeholder="Select department" /></SelectTrigger><SelectContent>{DEPARTMENTS.map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent></Select></div>
+            <div className="space-y-2"><Label>Departamento</Label><Select value={formData.department} onValueChange={(v) => setFormData({ ...formData, department: v })}><SelectTrigger><SelectValue placeholder="Selecione o departamento" /></SelectTrigger><SelectContent>{DEPARTMENTS.map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent></Select></div>
             <div className="space-y-2"><Label>Max Hours/Week</Label><Input type="number" min={1} max={40} value={formData.maxHoursPerWeek} onChange={(e) => setFormData({ ...formData, maxHoursPerWeek: parseInt(e.target.value) || 0 })} /></div>
           </div>
           <DialogFooter>

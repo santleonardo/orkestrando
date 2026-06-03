@@ -273,7 +273,7 @@ export default function ProfessorMessagesPage() {
           <div className="relative">
             <Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="Search conversations..."
+              placeholder="Buscar conversas..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="h-9 pl-8 text-sm"
@@ -480,7 +480,7 @@ export default function ProfessorMessagesPage() {
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    placeholder="Type a message..."
+                    placeholder="Digite uma mensagem..."
                     rows={1}
                     className="flex-1 resize-none bg-transparent text-sm outline-none placeholder:text-muted-foreground min-h-[32px] max-h-24"
                   />

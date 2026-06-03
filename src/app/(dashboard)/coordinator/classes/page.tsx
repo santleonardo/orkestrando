@@ -328,10 +328,10 @@ export default function ClassManagementPage() {
           <div className="flex flex-col gap-3 md:flex-row md:items-center">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="Search classes..." className="pl-9" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+              <Input placeholder="Buscar turmas..." className="pl-9" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
             </div>
             <Select value={filterSemester} onValueChange={setFilterSemester}>
-              <SelectTrigger className="w-36"><SelectValue placeholder="Semester" /></SelectTrigger>
+              <SelectTrigger className="w-36"><SelectValue placeholder="Semestre" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Semesters</SelectItem>
                 <SelectItem value="2024.1">2024.1</SelectItem>
@@ -339,14 +339,14 @@ export default function ClassManagementPage() {
               </SelectContent>
             </Select>
             <Select value={filterSubject} onValueChange={setFilterSubject}>
-              <SelectTrigger className="w-44"><SelectValue placeholder="Subject" /></SelectTrigger>
+              <SelectTrigger className="w-44"><SelectValue placeholder="Disciplina" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Subjects</SelectItem>
                 {mockSubjects.map((s) => <SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>)}
               </SelectContent>
             </Select>
             <Select value={filterTeacher} onValueChange={setFilterTeacher}>
-              <SelectTrigger className="w-44"><SelectValue placeholder="Teacher" /></SelectTrigger>
+              <SelectTrigger className="w-44"><SelectValue placeholder="Professor" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Teachers</SelectItem>
                 {mockTeachers.map((t) => <SelectItem key={t.id} value={t.name}>{t.name}</SelectItem>)}
@@ -355,8 +355,8 @@ export default function ClassManagementPage() {
             <Select value={filterStatus} onValueChange={setFilterStatus}>
               <SelectTrigger className="w-32"><SelectValue placeholder="Status" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                <SelectItem value="ACTIVE">Active</SelectItem>
+                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="ACTIVE">Ativo</SelectItem>
                 <SelectItem value="COMPLETED">Completed</SelectItem>
               </SelectContent>
             </Select>
@@ -473,18 +473,18 @@ export default function ClassManagementPage() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Subject</Label>
+                <Label>Disciplina</Label>
                 <Select value={formData.subjectId} onValueChange={(v) => setFormData({ ...formData, subjectId: v })}>
-                  <SelectTrigger><SelectValue placeholder="Select subject" /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder="Selecione a disciplina" /></SelectTrigger>
                   <SelectContent>
                     {mockSubjects.map((s) => <SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>Teacher</Label>
+                <Label>Professor</Label>
                 <Select value={formData.teacherId} onValueChange={(v) => setFormData({ ...formData, teacherId: v })}>
-                  <SelectTrigger><SelectValue placeholder="Select teacher" /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder="Selecione o professor" /></SelectTrigger>
                   <SelectContent>
                     {mockTeachers.map((t) => <SelectItem key={t.id} value={t.name}>{t.name}</SelectItem>)}
                   </SelectContent>
@@ -495,7 +495,7 @@ export default function ClassManagementPage() {
               <div className="space-y-2">
                 <Label>Room</Label>
                 <Select value={formData.roomId} onValueChange={(v) => setFormData({ ...formData, roomId: v })}>
-                  <SelectTrigger><SelectValue placeholder="Select room" /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder="Selecione a sala" /></SelectTrigger>
                   <SelectContent>
                     {mockRooms.map((r) => <SelectItem key={r.id} value={r.name}>{r.name}</SelectItem>)}
                   </SelectContent>
@@ -564,7 +564,7 @@ export default function ClassManagementPage() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Teacher</Label>
+                <Label>Professor</Label>
                 <Select value={formData.teacherId} onValueChange={(v) => setFormData({ ...formData, teacherId: v })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>{mockTeachers.map((t) => <SelectItem key={t.id} value={t.name}>{t.name}</SelectItem>)}</SelectContent>

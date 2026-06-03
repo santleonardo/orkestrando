@@ -200,7 +200,7 @@ export default function CoordinatorMessagesPage() {
             <div className="p-3 border-b">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input placeholder="Search conversations..." className="pl-9 h-9" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+                <Input placeholder="Buscar conversas..." className="pl-9 h-9" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
               </div>
             </div>
             <Tabs value={activeTab} onValueChange={setActiveTab} className="px-3 pt-2">
@@ -309,7 +309,7 @@ export default function CoordinatorMessagesPage() {
                   <div className="flex items-center gap-2">
                     <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0"><Paperclip className="h-4 w-4" /></Button>
                     <Input
-                      placeholder="Type a message..."
+                      placeholder="Digite uma mensagem..."
                       className="flex-1"
                       value={messageInput}
                       onChange={(e) => setMessageInput(e.target.value)}
@@ -352,10 +352,10 @@ export default function CoordinatorMessagesPage() {
               </Select>
             </div>
             {announcementForm.target === 'class' && (
-              <div className="space-y-2"><Label>Class</Label><Select><SelectTrigger><SelectValue placeholder="Select class" /></SelectTrigger><SelectContent><SelectItem value="cs201-a">Data Structures - A</SelectItem><SelectItem value="ma102-a">Calculus II - A</SelectItem></SelectContent></Select></div>
+              <div className="space-y-2"><Label>Turma</Label><Select><SelectTrigger><SelectValue placeholder="Selecione a turma" /></SelectTrigger><SelectContent><SelectItem value="cs201-a">Data Structures - A</SelectItem><SelectItem value="ma102-a">Calculus II - A</SelectItem></SelectContent></Select></div>
             )}
-            <div className="space-y-2"><Label>Title</Label><Input placeholder="Announcement title..." value={announcementForm.title} onChange={(e) => setAnnouncementForm({ ...announcementForm, title: e.target.value })} /></div>
-            <div className="space-y-2"><Label>Content</Label><Textarea placeholder="Write your announcement..." rows={5} value={announcementForm.content} onChange={(e) => setAnnouncementForm({ ...announcementForm, content: e.target.value })} /></div>
+            <div className="space-y-2"><Label>Título</Label><Input placeholder="Título do comunicado..." value={announcementForm.title} onChange={(e) => setAnnouncementForm({ ...announcementForm, title: e.target.value })} /></div>
+            <div className="space-y-2"><Label>Conteúdo</Label><Textarea placeholder="Escreva seu comunicado..." rows={5} value={announcementForm.content} onChange={(e) => setAnnouncementForm({ ...announcementForm, content: e.target.value })} /></div>
             <div className="flex items-center gap-4">
               <Button variant="outline" size="sm" className="gap-2"><Paperclip className="h-4 w-4" /> Attach File</Button>
               <Button variant="outline" size="sm" className="gap-2"><Image className="h-4 w-4" /> Add Image</Button>

@@ -244,9 +244,9 @@ export default function RoomManagementPage() {
           <Card className="border-violet-200 dark:border-violet-800/50">
             <CardContent className="p-4">
               <div className="flex flex-col gap-3 md:flex-row md:items-center">
-                <div className="relative flex-1"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input placeholder="Search rooms..." className="pl-9" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} /></div>
-                <Select value={filterType} onValueChange={setFilterType}><SelectTrigger className="w-40"><SelectValue placeholder="Type" /></SelectTrigger><SelectContent><SelectItem value="all">All Types</SelectItem>{ROOM_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent></Select>
-                <Select value={filterBuilding} onValueChange={setFilterBuilding}><SelectTrigger className="w-44"><SelectValue placeholder="Building" /></SelectTrigger><SelectContent><SelectItem value="all">All Buildings</SelectItem>{buildings.map((b) => <SelectItem key={b} value={b}>{b}</SelectItem>)}</SelectContent></Select>
+                <div className="relative flex-1"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input placeholder="Buscar salas..." className="pl-9" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} /></div>
+                <Select value={filterType} onValueChange={setFilterType}><SelectTrigger className="w-40"><SelectValue placeholder="Tipo" /></SelectTrigger><SelectContent><SelectItem value="all">Todos os tipos</SelectItem>{ROOM_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent></Select>
+                <Select value={filterBuilding} onValueChange={setFilterBuilding}><SelectTrigger className="w-44"><SelectValue placeholder="Prédio" /></SelectTrigger><SelectContent><SelectItem value="all">Todos os prédios</SelectItem>{buildings.map((b) => <SelectItem key={b} value={b}>{b}</SelectItem>)}</SelectContent></Select>
               </div>
             </CardContent>
           </Card>
@@ -324,10 +324,10 @@ export default function RoomManagementPage() {
             </div>
             <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2"><Label>Capacity</Label><Input type="number" min={1} value={formData.capacity} onChange={(e) => setFormData({ ...formData, capacity: parseInt(e.target.value) || 0 })} /></div>
-              <div className="space-y-2"><Label>Type</Label><Select value={formData.type} onValueChange={(v) => setFormData({ ...formData, type: v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{ROOM_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent></Select></div>
+              <div className="space-y-2"><Label>Tipo</Label><Select value={formData.type} onValueChange={(v) => setFormData({ ...formData, type: v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{ROOM_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent></Select></div>
               <div className="space-y-2"><Label>Floor</Label><Input type="number" min={0} value={formData.floor} onChange={(e) => setFormData({ ...formData, floor: parseInt(e.target.value) || 0 })} /></div>
             </div>
-            <div className="space-y-2"><Label>Building</Label><Input placeholder="e.g. Main Building" value={formData.building} onChange={(e) => setFormData({ ...formData, building: e.target.value })} /></div>
+            <div className="space-y-2"><Label>Prédio</Label><Input placeholder="e.g. Main Building" value={formData.building} onChange={(e) => setFormData({ ...formData, building: e.target.value })} /></div>
             <div className="space-y-2">
               <Label>Resources</Label>
               <div className="flex flex-wrap gap-2">

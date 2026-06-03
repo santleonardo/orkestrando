@@ -189,9 +189,9 @@ export default function EnrollmentManagementPage() {
             <Card className="border-violet-200 dark:border-violet-800/50">
               <CardContent className="p-4">
                 <div className="flex flex-col gap-3 md:flex-row md:items-center">
-                  <div className="relative flex-1"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input placeholder="Search by student or class..." className="pl-9" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} /></div>
-                  <Select value={filterClass} onValueChange={setFilterClass}><SelectTrigger className="w-44"><SelectValue placeholder="Class" /></SelectTrigger><SelectContent><SelectItem value="all">All Classes</SelectItem>{mockClassOptions.map((c) => <SelectItem key={c.id} value={c.name.match(/\(([^)]+)\)/)?.[1] || c.id}>{c.name}</SelectItem>)}</SelectContent></Select>
-                  <Select value={filterSemester} onValueChange={setFilterSemester}><SelectTrigger className="w-36"><SelectValue placeholder="Semester" /></SelectTrigger><SelectContent><SelectItem value="all">All</SelectItem><SelectItem value="2024.1">2024.1</SelectItem><SelectItem value="2023.2">2023.2</SelectItem></SelectContent></Select>
+                  <div className="relative flex-1"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input placeholder="Buscar por aluno ou turma..." className="pl-9" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} /></div>
+                  <Select value={filterClass} onValueChange={setFilterClass}><SelectTrigger className="w-44"><SelectValue placeholder="Turma" /></SelectTrigger><SelectContent><SelectItem value="all">Todas as turmas</SelectItem>{mockClassOptions.map((c) => <SelectItem key={c.id} value={c.name.match(/\(([^)]+)\)/)?.[1] || c.id}>{c.name}</SelectItem>)}</SelectContent></Select>
+                  <Select value={filterSemester} onValueChange={setFilterSemester}><SelectTrigger className="w-36"><SelectValue placeholder="Semestre" /></SelectTrigger><SelectContent><SelectItem value="all">Todos</SelectItem><SelectItem value="2024.1">2024.1</SelectItem><SelectItem value="2023.2">2023.2</SelectItem></SelectContent></Select>
                 </div>
               </CardContent>
             </Card>
@@ -242,8 +242,8 @@ export default function EnrollmentManagementPage() {
         <DialogContent className="max-w-md">
           <DialogHeader><DialogTitle className="text-violet-700">New Enrollment</DialogTitle><DialogDescription>Select student and class.</DialogDescription></DialogHeader>
           <div className="grid gap-4 py-4">
-            <div className="space-y-2"><Label>Student</Label><Select value={formData.studentId} onValueChange={(v) => setFormData({ ...formData, studentId: v })}><SelectTrigger><SelectValue placeholder="Select student" /></SelectTrigger><SelectContent>{mockStudentOptions.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent></Select></div>
-            <div className="space-y-2"><Label>Class</Label><Select value={formData.classId} onValueChange={(v) => setFormData({ ...formData, classId: v })}><SelectTrigger><SelectValue placeholder="Select class" /></SelectTrigger><SelectContent>{mockClassOptions.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent></Select></div>
+            <div className="space-y-2"><Label>Aluno</Label><Select value={formData.studentId} onValueChange={(v) => setFormData({ ...formData, studentId: v })}><SelectTrigger><SelectValue placeholder="Selecione o aluno" /></SelectTrigger><SelectContent>{mockStudentOptions.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent></Select></div>
+            <div className="space-y-2"><Label>Turma</Label><Select value={formData.classId} onValueChange={(v) => setFormData({ ...formData, classId: v })}><SelectTrigger><SelectValue placeholder="Selecione a turma" /></SelectTrigger><SelectContent>{mockClassOptions.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent></Select></div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setCreateOpen(false)}>Cancel</Button>
@@ -259,7 +259,7 @@ export default function EnrollmentManagementPage() {
         <DialogContent className="max-w-md">
           <DialogHeader><DialogTitle className="text-violet-700">Bulk Enrollment</DialogTitle><DialogDescription>Enroll multiple students in a class at once.</DialogDescription></DialogHeader>
           <div className="grid gap-4 py-4">
-            <div className="space-y-2"><Label>Class</Label><Select><SelectTrigger><SelectValue placeholder="Select class" /></SelectTrigger><SelectContent>{mockClassOptions.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent></Select></div>
+            <div className="space-y-2"><Label>Turma</Label><Select><SelectTrigger><SelectValue placeholder="Selecione a turma" /></SelectTrigger><SelectContent>{mockClassOptions.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent></Select></div>
             <div className="space-y-2"><Label>Students (comma-separated names or IDs)</Label><Textarea placeholder="e.g. Ana Silva, João Lima, Pedro Almeida" rows={4} /></div>
           </div>
           <DialogFooter><Button variant="outline" onClick={() => setBulkOpen(false)}>Cancel</Button><Button className="bg-violet-600 hover:bg-violet-700">Enroll All</Button></DialogFooter>

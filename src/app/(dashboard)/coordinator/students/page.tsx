@@ -174,10 +174,10 @@ export default function StudentManagementPage() {
           <Card className="border-violet-200 dark:border-violet-800/50">
             <CardContent className="p-4">
               <div className="flex flex-col gap-3 md:flex-row md:items-center">
-                <div className="relative flex-1"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input placeholder="Search by name, enrollment number, or email..." className="pl-9" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} /></div>
-                <Select value={filterCourse} onValueChange={setFilterCourse}><SelectTrigger className="w-44"><SelectValue placeholder="Course" /></SelectTrigger><SelectContent><SelectItem value="all">All Courses</SelectItem>{COURSES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select>
-                <Select value={filterSemester} onValueChange={setFilterSemester}><SelectTrigger className="w-36"><SelectValue placeholder="Semester" /></SelectTrigger><SelectContent><SelectItem value="all">All</SelectItem>{[1,2,3,4,5,6,7,8].map((s) => <SelectItem key={s} value={String(s)}>Semester {s}</SelectItem>)}</SelectContent></Select>
-                <Select value={filterStatus} onValueChange={setFilterStatus}><SelectTrigger className="w-32"><SelectValue placeholder="Status" /></SelectTrigger><SelectContent><SelectItem value="all">All</SelectItem><SelectItem value="active">Active</SelectItem><SelectItem value="suspended">Suspended</SelectItem></SelectContent></Select>
+                <div className="relative flex-1"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input placeholder="Buscar por nome, matrícula ou e-mail..." className="pl-9" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} /></div>
+                <Select value={filterCourse} onValueChange={setFilterCourse}><SelectTrigger className="w-44"><SelectValue placeholder="Curso" /></SelectTrigger><SelectContent><SelectItem value="all">Todos os cursos</SelectItem>{COURSES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select>
+                <Select value={filterSemester} onValueChange={setFilterSemester}><SelectTrigger className="w-36"><SelectValue placeholder="Semestre" /></SelectTrigger><SelectContent><SelectItem value="all">Todos</SelectItem>{[1,2,3,4,5,6,7,8].map((s) => <SelectItem key={s} value={String(s)}>Semester {s}</SelectItem>)}</SelectContent></Select>
+                <Select value={filterStatus} onValueChange={setFilterStatus}><SelectTrigger className="w-32"><SelectValue placeholder="Status" /></SelectTrigger><SelectContent><SelectItem value="all">Todos</SelectItem><SelectItem value="active">Ativo</SelectItem><SelectItem value="suspended">Suspenso</SelectItem></SelectContent></Select>
               </div>
             </CardContent>
           </Card>
@@ -249,8 +249,8 @@ export default function StudentManagementPage() {
           <DialogHeader><DialogTitle className="text-violet-700">{createOpen ? 'Create New Student' : 'Edit Student'}</DialogTitle><DialogDescription>{createOpen ? 'Register a new student.' : `Editing ${selectedStudent?.firstName} ${selectedStudent?.lastName}`}</DialogDescription></DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2"><Label>First Name</Label><Input value={formData.firstName} onChange={(e) => setFormData({ ...formData, firstName: e.target.value })} /></div>
-              <div className="space-y-2"><Label>Last Name</Label><Input value={formData.lastName} onChange={(e) => setFormData({ ...formData, lastName: e.target.value })} /></div>
+              <div className="space-y-2"><Label>Nome</Label><Input value={formData.firstName} onChange={(e) => setFormData({ ...formData, firstName: e.target.value })} /></div>
+              <div className="space-y-2"><Label>Sobrenome</Label><Input value={formData.lastName} onChange={(e) => setFormData({ ...formData, lastName: e.target.value })} /></div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2"><Label>Email</Label><Input type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} /></div>
@@ -261,7 +261,7 @@ export default function StudentManagementPage() {
               <div className="space-y-2"><Label>Semester</Label><Input type="number" min={1} max={12} value={formData.semester} onChange={(e) => setFormData({ ...formData, semester: parseInt(e.target.value) || 1 })} /></div>
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2"><Label>Course</Label><Select value={formData.course} onValueChange={(v) => setFormData({ ...formData, course: v })}><SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger><SelectContent>{COURSES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select></div>
+              <div className="space-y-2"><Label>Curso</Label><Select value={formData.course} onValueChange={(v) => setFormData({ ...formData, course: v })}><SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger><SelectContent>{COURSES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select></div>
               <div className="space-y-2"><Label>Shift</Label><Select value={formData.shift} onValueChange={(v) => setFormData({ ...formData, shift: v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{SHIFTS.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent></Select></div>
             </div>
           </div>

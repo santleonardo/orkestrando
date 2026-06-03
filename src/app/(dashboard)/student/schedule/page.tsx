@@ -208,7 +208,7 @@ export default function StudentSchedulePage() {
         <div className="flex items-center gap-2">
           <Select value={selectedDay || 'all'} onValueChange={(v) => setSelectedDay(v === 'all' ? '' : v)}>
             <SelectTrigger className="w-40">
-              <SelectValue placeholder="All Days" />
+              <SelectValue placeholder="Todos os dias" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Days</SelectItem>
@@ -221,7 +221,7 @@ export default function StudentSchedulePage() {
           </Select>
           <Select value={selectedSemester} onValueChange={setSelectedSemester}>
             <SelectTrigger className="w-48">
-              <SelectValue placeholder="Semester" />
+              <SelectValue placeholder="Semestre" />
             </SelectTrigger>
             <SelectContent>
               {semesters.map((s) => (

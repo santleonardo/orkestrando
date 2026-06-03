@@ -246,7 +246,7 @@ export default function ProfessorReportsPage() {
               <label className="text-xs font-medium text-muted-foreground">Class</label>
               <Select value={classFilter} onValueChange={setClassFilter}>
                 <SelectTrigger className="w-56">
-                  <SelectValue placeholder="All Classes" />
+                  <SelectValue placeholder="Todas as turmas" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Classes</SelectItem>
