@@ -1,59 +1,58 @@
-import { NextRequest } from 'next/server'
-import { z } from 'zod'
+import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import {
-  parseQuery,
-  handleApiError,
-  apiResponse,
-  paginatedResponse,
-  getAuthProfile,
-  paginationSchema,
-} from '@/lib/api-utils'
-
-// ==================== Schema ====================
-
-const notificationsQuerySchema = z.object({
-  isRead: z.coerce.boolean().optional(),
-  type: z.enum(['INFO', 'WARNING', 'SUCCESS', 'ERROR']).optional(),
-  ...paginationSchema.shape,
-})
-
-// ==================== GET /api/notifications ====================
 
 export async function GET(request: NextRequest) {
   try {
-    const auth = getAuthProfile(request)
-    const query = parseQuery(request, notificationsQuerySchema)
-    const { page, pageSize, isRead, type } = query
+    const { searchParams } = new URL(request.url)
+    const profileId = searchParams.get('profileId')
+    const unreadOnly = searchParams.get('unreadOnly')
+    const page = parseInt(searchParams.get('page') || '1')
+    const pageSize = parseInt(searchParams.get('pageSize') || '20')
 
-    const where: Record<string, unknown> = {
-      profileId: auth.id,
+    if (!profileId) {
+      return NextResponse.json({ success: false, error: 'profileId is required' }, { status: 400 })
     }
-    if (isRead !== undefined) where.isRead = isRead
-    if (type) where.type = type
+
+    const where: Record<string, unknown> = { profileId }
+    if (unreadOnly === 'true') {
+      where.isRead = false
+    }
 
     const [notifications, total] = await Promise.all([
       db.notification.findMany({
         where,
-        orderBy: [{ createdAt: 'desc' }],
         skip: (page - 1) * pageSize,
         take: pageSize,
+        orderBy: { createdAt: 'desc' },
       }),
       db.notification.count({ where }),
     ])
 
-    // Count unread
-    const unreadCount = await db.notification.count({
-      where: { profileId: auth.id, isRead: false },
-    })
+    const totalPages = Math.ceil(total / pageSize)
 
-    return paginatedResponse(
-      { items: notifications, unreadCount },
-      total,
-      page,
-      pageSize
-    )
-  } catch (error) {
-    return handleApiError(error)
+    return NextResponse.json({
+      success: true,
+      data: notifications,
+      pagination: { page, pageSize, total, totalPages, hasNextPage: page < totalPages, hasPreviousPage: page > 1 },
+    })
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : 'Failed to fetch notifications'
+    return NextResponse.json({ success: false, error: msg }, { status: 500 })
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json()
+    const { profileId, type, title, message } = body
+    if (!profileId || !title || !message) {
+      return NextResponse.json({ success: false, error: 'profileId, title, and message are required' }, { status: 400 })
+    }
+
+    const notification = await db.notification.create({ data: body })
+    return NextResponse.json({ success: true, data: notification }, { status: 201 })
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : 'Failed to create notification'
+    return NextResponse.json({ success: false, error: msg }, { status: 500 })
   }
 }

@@ -1,201 +1,76 @@
-import { NextRequest } from 'next/server'
-import { z } from 'zod'
+import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import {
-  parseBody,
-  parseQuery,
-  handleApiError,
-  apiResponse,
-  apiError,
-  paginatedResponse,
-  getAuthProfile,
-  paginationSchema,
-  searchSchema,
-} from '@/lib/api-utils'
-
-// ==================== Schemas ====================
-
-const conversationsQuerySchema = z.object({
-  type: z.enum(['DIRECT', 'GROUP']).optional(),
-  ...paginationSchema.shape,
-  ...searchSchema.shape,
-})
-
-const createConversationSchema = z.object({
-  title: z.string().optional(),
-  type: z.enum(['DIRECT', 'GROUP']).default('DIRECT'),
-  participantIds: z.array(z.string().min(1)).min(1, 'At least one participant is required'),
-})
-
-// ==================== GET /api/conversations ====================
 
 export async function GET(request: NextRequest) {
   try {
-    const auth = getAuthProfile(request)
-    const query = parseQuery(request, conversationsQuerySchema)
-    const { page, pageSize, type } = query
+    const { searchParams } = new URL(request.url)
+    const profileId = searchParams.get('profileId')
+    const page = parseInt(searchParams.get('page') || '1')
+    const pageSize = parseInt(searchParams.get('pageSize') || '20')
 
-    const where: Record<string, unknown> = {
-      participants: { some: { profileId: auth.id } },
+    if (!profileId) {
+      return NextResponse.json({ success: false, error: 'profileId is required' }, { status: 400 })
     }
-    if (type) where.type = type
 
     const [conversations, total] = await Promise.all([
       db.conversation.findMany({
-        where,
+        where: {
+          participants: { some: { profileId } },
+        },
         include: {
-          participants: {
-            include: {
-              profile: {
-                select: { id: true, role: true, user: { select: { id: true, name: true, avatarUrl: true } } },
-              },
-            },
-          },
-          _count: { select: { messages: true } },
+          participants: { include: { profile: { select: { id: true, firstName: true, lastName: true, displayName: true, avatar: true } } } },
           messages: {
             orderBy: { createdAt: 'desc' },
             take: 1,
-            include: {
-              sender: { select: { id: true, name: true } },
-            },
+            select: { id: true, content: true, createdAt: true, senderId: true },
           },
         },
-        orderBy: [{ updatedAt: 'desc' }],
         skip: (page - 1) * pageSize,
         take: pageSize,
+        orderBy: { updatedAt: 'desc' },
       }),
-      db.conversation.count({ where }),
+      db.conversation.count({
+        where: { participants: { some: { profileId } } },
+      }),
     ])
 
-    // Get unread count for each conversation
-    const conversationsWithUnread = await Promise.all(
-      conversations.map(async (conv) => {
-        const participant = conv.participants.find((p) => p.profileId === auth.id)
-        let unreadCount = 0
+    const totalPages = Math.ceil(total / pageSize)
 
-        if (participant?.lastReadAt) {
-          unreadCount = await db.message.count({
-            where: {
-              conversationId: conv.id,
-              senderId: { not: auth.userId },
-              isRead: false,
-              createdAt: { gt: participant.lastReadAt },
-            },
-          })
-        } else {
-          unreadCount = await db.message.count({
-            where: {
-              conversationId: conv.id,
-              senderId: { not: auth.userId },
-              isRead: false,
-            },
-          })
-        }
-
-        return {
-          ...conv,
-          unreadCount,
-          lastMessage: conv.messages[0] || null,
-        }
-      })
-    )
-
-    return paginatedResponse(conversationsWithUnread, total, page, pageSize)
-  } catch (error) {
-    return handleApiError(error)
+    return NextResponse.json({
+      success: true,
+      data: conversations,
+      pagination: { page, pageSize, total, totalPages, hasNextPage: page < totalPages, hasPreviousPage: page > 1 },
+    })
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : 'Failed to fetch conversations'
+    return NextResponse.json({ success: false, error: msg }, { status: 500 })
   }
 }
 
-// ==================== POST /api/conversations ====================
-
 export async function POST(request: NextRequest) {
   try {
-    const auth = getAuthProfile(request)
-    const body = await parseBody(request, createConversationSchema)
-
-    // For DIRECT conversations, check if one already exists between these users
-    if (body.type === 'DIRECT' && body.participantIds.length === 1) {
-      const otherParticipantId = body.participantIds[0]
-
-      const existingConversation = await db.conversation.findFirst({
-        where: {
-          type: 'DIRECT',
-          participants: {
-            every: {
-              profileId: { in: [auth.id, otherParticipantId] },
-            },
-          },
-        },
-        include: {
-          participants: {
-            include: {
-              profile: {
-                select: { id: true, role: true, user: { select: { id: true, name: true, avatarUrl: true } } },
-              },
-            },
-          },
-        },
-      })
-
-      if (existingConversation) {
-        return apiResponse(existingConversation)
-      }
+    const body = await request.json()
+    const { type, title, participantIds } = body
+    if (!participantIds || participantIds.length < 2) {
+      return NextResponse.json({ success: false, error: 'At least 2 participants required' }, { status: 400 })
     }
 
-    // Verify all participants exist
-    const profiles = await db.profile.findMany({
-      where: { id: { in: body.participantIds } },
-    })
-    if (profiles.length !== body.participantIds.length) {
-      return apiError('One or more participants not found', 404)
-    }
-
-    // Create conversation and participants in a transaction
-    const conversation = await db.$transaction(async (tx) => {
-      const conv = await tx.conversation.create({
-        data: {
-          title: body.title,
-          type: body.type,
-        },
-      })
-
-      // Add creator as participant
-      await tx.conversationParticipant.create({
-        data: {
-          conversationId: conv.id,
-          profileId: auth.id,
-        },
-      })
-
-      // Add other participants
-      for (const participantId of body.participantIds) {
-        await tx.conversationParticipant.create({
-          data: {
-            conversationId: conv.id,
-            profileId: participantId,
-          },
-        })
-      }
-
-      return conv
-    })
-
-    // Fetch the created conversation with participants
-    const fullConversation = await db.conversation.findUnique({
-      where: { id: conversation.id },
-      include: {
+    const conversation = await db.conversation.create({
+      data: {
+        type: type || 'DIRECT',
+        title,
         participants: {
-          include: {
-            profile: {
-              select: { id: true, role: true, user: { select: { id: true, name: true, avatarUrl: true } } },
-            },
-          },
+          create: participantIds.map((id: string) => ({ profileId: id })),
         },
+      },
+      include: {
+        participants: { include: { profile: { select: { id: true, firstName: true, lastName: true, displayName: true } } } },
       },
     })
 
-    return apiResponse(fullConversation, 201)
-  } catch (error) {
-    return handleApiError(error)
+    return NextResponse.json({ success: true, data: conversation }, { status: 201 })
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : 'Failed to create conversation'
+    return NextResponse.json({ success: false, error: msg }, { status: 500 })
   }
 }

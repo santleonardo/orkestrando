@@ -1,142 +1,61 @@
-import { NextRequest } from 'next/server'
-import { z } from 'zod'
+import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import {
-  parseBody,
-  parseQuery,
-  handleApiError,
-  apiResponse,
-  apiError,
-  paginatedResponse,
-  getAuthProfile,
-  createAuditLog,
-  paginationSchema,
-  searchSchema,
-} from '@/lib/api-utils'
-
-// ==================== Schemas ====================
-
-const materialsQuerySchema = z.object({
-  subjectId: z.string().optional(),
-  classId: z.string().optional(),
-  type: z.enum(['PDF', 'DOC', 'PPT', 'VIDEO', 'IMAGE', 'LINK', 'OTHER']).optional(),
-  uploadedBy: z.string().optional(),
-  ...paginationSchema.shape,
-  ...searchSchema.shape,
-})
-
-const createMaterialSchema = z.object({
-  title: z.string().min(1, 'Title is required'),
-  description: z.string().optional(),
-  type: z.enum(['PDF', 'DOC', 'PPT', 'VIDEO', 'IMAGE', 'LINK', 'OTHER']).default('PDF'),
-  fileUrl: z.string().optional(),
-  fileSize: z.number().int().positive().optional(),
-  subjectId: z.string().optional(),
-  classId: z.string().optional(),
-})
-
-const updateMaterialSchema = z.object({
-  title: z.string().min(1).optional(),
-  description: z.string().optional(),
-  type: z.enum(['PDF', 'DOC', 'PPT', 'VIDEO', 'IMAGE', 'LINK', 'OTHER']).optional(),
-  fileUrl: z.string().nullable().optional(),
-  fileSize: z.number().int().positive().nullable().optional(),
-  subjectId: z.string().nullable().optional(),
-  classId: z.string().nullable().optional(),
-})
-
-// ==================== GET /api/materials ====================
 
 export async function GET(request: NextRequest) {
   try {
-    const query = parseQuery(request, materialsQuerySchema)
-    const { page, pageSize, search, subjectId, classId, type, uploadedBy } = query
+    const { searchParams } = new URL(request.url)
+    const classId = searchParams.get('classId')
+    const type = searchParams.get('type')
+    const published = searchParams.get('published')
+    const page = parseInt(searchParams.get('page') || '1')
+    const pageSize = parseInt(searchParams.get('pageSize') || '20')
 
     const where: Record<string, unknown> = {}
-    if (subjectId) where.subjectId = subjectId
     if (classId) where.classId = classId
     if (type) where.type = type
-    if (uploadedBy) where.uploadedBy = uploadedBy
-
-    if (search) {
-      where.OR = [
-        { title: { contains: search } },
-        { description: { contains: search } },
-      ]
+    if (published !== null && published !== undefined) {
+      where.isPublished = published === 'true'
     }
 
     const [materials, total] = await Promise.all([
       db.material.findMany({
         where,
         include: {
-          subject: { select: { id: true, code: true, name: true } },
-          class: { select: { id: true, code: true, name: true } },
-          uploader: {
-            select: { id: true, role: true, profile: { select: { id: true, firstName: true, lastName: true, email: true } } },
-          },
+          uploader: { select: { id: true, firstName: true, lastName: true } },
+          class: { include: { subject: true } },
         },
-        orderBy: [{ createdAt: 'desc' }],
         skip: (page - 1) * pageSize,
         take: pageSize,
+        orderBy: { createdAt: 'desc' },
       }),
       db.material.count({ where }),
     ])
 
-    return paginatedResponse(materials, total, page, pageSize)
-  } catch (error) {
-    return handleApiError(error)
+    const totalPages = Math.ceil(total / pageSize)
+
+    return NextResponse.json({
+      success: true,
+      data: materials,
+      pagination: { page, pageSize, total, totalPages, hasNextPage: page < totalPages, hasPreviousPage: page > 1 },
+    })
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : 'Failed to fetch materials'
+    return NextResponse.json({ success: false, error: msg }, { status: 500 })
   }
 }
 
-// ==================== POST /api/materials ====================
-
 export async function POST(request: NextRequest) {
   try {
-    const auth = getAuthProfile(request)
-    const body = await parseBody(request, createMaterialSchema)
-
-    // Verify subject exists if provided
-    if (body.subjectId) {
-      const subject = await db.subject.findUnique({ where: { id: body.subjectId } })
-      if (!subject) return apiError('Subject not found', 404)
+    const body = await request.json()
+    const { classId, title, fileUrl, fileName, uploadedBy, mimeType } = body
+    if (!classId || !title || !fileUrl || !fileName || !uploadedBy) {
+      return NextResponse.json({ success: false, error: 'Required fields missing' }, { status: 400 })
     }
 
-    // Verify class exists if provided
-    if (body.classId) {
-      const classData = await db.class.findUnique({ where: { id: body.classId } })
-      if (!classData) return apiError('Class not found', 404)
-    }
-
-    const material = await db.material.create({
-      data: {
-        title: body.title,
-        description: body.description,
-        type: body.type,
-        fileUrl: body.fileUrl,
-        fileSize: body.fileSize,
-        subjectId: body.subjectId,
-        classId: body.classId,
-        uploadedBy: auth.id,
-      },
-      include: {
-        subject: { select: { id: true, code: true, name: true } },
-        class: { select: { id: true, code: true, name: true } },
-        uploader: {
-          select: { id: true, role: true, profile: { select: { id: true, firstName: true, lastName: true, email: true } } },
-        },
-      },
-    })
-
-    await createAuditLog({
-      action: 'CREATE',
-      profileId: auth.id,
-      resource: 'Material',
-      resourceId: material.id,
-      request,
-    })
-
-    return apiResponse(material, 201)
-  } catch (error) {
-    return handleApiError(error)
+    const material = await db.material.create({ data: body })
+    return NextResponse.json({ success: true, data: material }, { status: 201 })
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : 'Failed to create material'
+    return NextResponse.json({ success: false, error: msg }, { status: 500 })
   }
 }

@@ -1,93 +1,42 @@
-import { NextRequest } from 'next/server'
-import { z } from 'zod'
+import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import {
-  parseQuery,
-  handleApiError,
-  apiResponse,
-  paginatedResponse,
-  paginationSchema,
-  getAuthProfile,
-  requirePermission,
-} from '@/lib/api-utils'
-
-// ==================== Schema ====================
-
-const auditQuerySchema = z.object({
-  action: z.enum(['CREATE', 'READ', 'UPDATE', 'DELETE', 'LOGIN', 'LOGOUT', 'EXPORT']).optional(),
-  profileId: z.string().optional(),
-  resource: z.string().optional(),
-  resourceId: z.string().optional(),
-  dateFrom: z.string().optional(),
-  dateTo: z.string().optional(),
-  ...paginationSchema.shape,
-})
-
-// ==================== GET /api/audit ====================
 
 export async function GET(request: NextRequest) {
   try {
-    const auth = getAuthProfile(request)
-    requirePermission(auth, 'COORDINATOR')
-    const query = parseQuery(request, auditQuerySchema)
-    const { page, pageSize, action, profileId, resource, resourceId, dateFrom, dateTo } = query
+    const { searchParams } = new URL(request.url)
+    const profileId = searchParams.get('profileId')
+    const action = searchParams.get('action')
+    const resource = searchParams.get('resource')
+    const page = parseInt(searchParams.get('page') || '1')
+    const pageSize = parseInt(searchParams.get('pageSize') || '20')
 
     const where: Record<string, unknown> = {}
-    if (action) where.action = action
     if (profileId) where.profileId = profileId
+    if (action) where.action = action
     if (resource) where.resource = resource
-    if (resourceId) where.resourceId = resourceId
-
-    if (dateFrom || dateTo) {
-      where.createdAt = {}
-      if (dateFrom) (where.createdAt as Record<string, unknown>).gte = new Date(dateFrom)
-      if (dateTo) (where.createdAt as Record<string, unknown>).lte = new Date(dateTo)
-    }
 
     const [logs, total] = await Promise.all([
       db.auditLog.findMany({
         where,
         include: {
-          profile: {
-            select: {
-              id: true,
-              role: true,
-              profile: { select: { id: true, firstName: true, lastName: true, email: true } },
-            },
-          },
+          profile: { select: { id: true, firstName: true, lastName: true, displayName: true } },
         },
-        orderBy: [{ createdAt: 'desc' }],
         skip: (page - 1) * pageSize,
         take: pageSize,
+        orderBy: { createdAt: 'desc' },
       }),
       db.auditLog.count({ where }),
     ])
 
-    // Parse JSON details
-    const parsedLogs = logs.map((log) => ({
-      ...log,
-      details: log.details ? JSON.parse(log.details) : null,
-    }))
+    const totalPages = Math.ceil(total / pageSize)
 
-    // Get action summary
-    const actionSummary = await db.auditLog.groupBy({
-      by: ['action'],
-      _count: true,
+    return NextResponse.json({
+      success: true,
+      data: logs,
+      pagination: { page, pageSize, total, totalPages, hasNextPage: page < totalPages, hasPreviousPage: page > 1 },
     })
-
-    return paginatedResponse(
-      {
-        logs: parsedLogs,
-        actionSummary: actionSummary.map((s) => ({
-          action: s.action,
-          count: s._count,
-        })),
-      },
-      total,
-      page,
-      pageSize
-    )
-  } catch (error) {
-    return handleApiError(error)
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : 'Failed to fetch audit logs'
+    return NextResponse.json({ success: false, error: msg }, { status: 500 })
   }
 }
