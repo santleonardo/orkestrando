@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
       case 'attendance': {
         const attendanceWhere: Record<string, unknown> = {}
         if (body.classId) attendanceWhere.enrollment = { classId: body.classId }
-        if (body.studentId) attendanceWhere.enrollment = { ...attendanceWhere.enrollment, studentId: body.studentId }
+        if (body.studentId) attendanceWhere.enrollment = { ...(attendanceWhere.enrollment as Record<string, unknown>), studentId: body.studentId }
         if (body.dateFrom || body.dateTo) {
           attendanceWhere.classSession = {}
           if (body.dateFrom) (attendanceWhere.classSession as Record<string, unknown>).date = { ...(attendanceWhere.classSession as any)?.date, gte: new Date(body.dateFrom) }
