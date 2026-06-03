@@ -39,7 +39,7 @@ export async function GET(
         class: {
           select: {
             id: true, code: true, name: true,
-            teacher: { select: { user: { select: { name: true } } } },
+            teacher: { select: { profile: { select: { firstName: true, lastName: true } } } },
             semester: { select: { name: true } },
           },
         },
@@ -108,7 +108,7 @@ export async function PUT(
         subject: { select: { id: true, code: true, name: true } },
         class: { select: { id: true, code: true, name: true } },
         uploader: {
-          select: { id: true, role: true, user: { select: { id: true, name: true, email: true } } },
+          select: { id: true, role: true, profile: { select: { id: true, firstName: true, lastName: true, email: true } } },
         },
       },
     })

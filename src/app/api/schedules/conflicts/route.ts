@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
         class: {
           include: {
             subject: { select: { code: true, name: true } },
-            teacher: { select: { id: true, user: { select: { name: true } } } },
+            teacher: { select: { id: true, profile: { select: { firstName: true, lastName: true } } } },
             semester: { select: { id: true, name: true } },
           },
         },
@@ -68,13 +68,13 @@ export async function POST(request: NextRequest) {
             conflicts.push({
               type: 'TEACHER_CONFLICT',
               severity: 'HIGH',
-              description: `Teacher "${s1.class.teacher.user.name}" has overlapping sessions on ${date1}: ${s1.class.subject.name} (${s1.startTime}-${s1.endTime}) vs ${s2.class.subject.name} (${s2.startTime}-${s2.endTime})`,
+              description: `Teacher "${s1.class.`${​teacher.profile?.firstName ?? ""} ${teacher.profile?.lastName ?? ""}`.trim()}" has overlapping sessions on ${date1}: ${s1.class.subject.name} (${s1.startTime}-${s1.endTime}) vs ${s2.class.subject.name} (${s2.startTime}-${s2.endTime})`,
               session1: {
-                id: s1.id, class: s1.class.subject.name, teacher: s1.class.teacher.user.name,
+                id: s1.id, class: s1.class.subject.name, teacher: s1.class.`${​teacher.profile?.firstName ?? ""} ${teacher.profile?.lastName ?? ""}`.trim(),
                 date: date1, startTime: s1.startTime, endTime: s1.endTime, room: s1.room?.name || null,
               },
               session2: {
-                id: s2.id, class: s2.class.subject.name, teacher: s2.class.teacher.user.name,
+                id: s2.id, class: s2.class.subject.name, teacher: s2.class.`${​teacher.profile?.firstName ?? ""} ${teacher.profile?.lastName ?? ""}`.trim(),
                 date: date2, startTime: s2.startTime, endTime: s2.endTime, room: s2.room?.name || null,
               },
             })
@@ -105,11 +105,11 @@ export async function POST(request: NextRequest) {
               severity: 'HIGH',
               description: `Room "${s1.room?.name || roomId}" has overlapping sessions on ${date1}`,
               session1: {
-                id: s1.id, class: s1.class.subject.name, teacher: s1.class.teacher.user.name,
+                id: s1.id, class: s1.class.subject.name, teacher: s1.class.`${​teacher.profile?.firstName ?? ""} ${teacher.profile?.lastName ?? ""}`.trim(),
                 date: date1, startTime: s1.startTime, endTime: s1.endTime, room: s1.room?.name || null,
               },
               session2: {
-                id: s2.id, class: s2.class.subject.name, teacher: s2.class.teacher.user.name,
+                id: s2.id, class: s2.class.subject.name, teacher: s2.class.`${​teacher.profile?.firstName ?? ""} ${teacher.profile?.lastName ?? ""}`.trim(),
                 date: date2, startTime: s2.startTime, endTime: s2.endTime, room: s2.room?.name || null,
               },
             })

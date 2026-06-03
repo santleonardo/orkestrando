@@ -78,7 +78,7 @@ export async function GET(request: NextRequest) {
         include: {
           subject: { select: { id: true, code: true, name: true, credits: true } },
           teacher: {
-            select: { id: true, role: true, user: { select: { id: true, name: true, email: true } } },
+            select: { id: true, role: true, profile: { select: { id: true, firstName: true, lastName: true, email: true } } },
           },
           semester: { select: { id: true, name: true } },
           room: { select: { id: true, name: true, code: true, capacity: true } },
@@ -152,7 +152,7 @@ export async function POST(request: NextRequest) {
       include: {
         subject: { select: { id: true, code: true, name: true, credits: true } },
         teacher: {
-          select: { id: true, role: true, user: { select: { id: true, name: true, email: true } } },
+          select: { id: true, role: true, profile: { select: { id: true, firstName: true, lastName: true, email: true } } },
         },
         semester: { select: { id: true, name: true } },
         room: { select: { id: true, name: true, code: true, capacity: true } },

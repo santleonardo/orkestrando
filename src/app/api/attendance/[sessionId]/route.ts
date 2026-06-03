@@ -23,14 +23,14 @@ export async function GET(
           include: {
             subject: { select: { id: true, code: true, name: true } },
             teacher: {
-              select: { id: true, user: { select: { id: true, name: true, email: true } } },
+              select: { id: true, profile: { select: { id: true, firstName: true, lastName: true, email: true } } },
             },
             semester: { select: { id: true, name: true } },
             enrollments: {
               where: { status: 'ACTIVE' },
               include: {
                 student: {
-                  select: { id: true, registrationNumber: true, user: { select: { id: true, name: true } } },
+                  select: { id: true, registrationNumber: true, profile: { select: { id: true, firstName: true, lastName: true } } },
                 },
               },
             },
@@ -42,7 +42,7 @@ export async function GET(
             enrollment: {
               select: {
                 student: {
-                  select: { id: true, registrationNumber: true, user: { select: { id: true, name: true } } },
+                  select: { id: true, registrationNumber: true, profile: { select: { id: true, firstName: true, lastName: true } } },
                 },
               },
             },

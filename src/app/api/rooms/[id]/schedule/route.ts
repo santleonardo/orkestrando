@@ -47,7 +47,7 @@ export async function GET(
         class: {
           include: {
             subject: { select: { id: true, code: true, name: true } },
-            teacher: { select: { user: { select: { id: true, name: true } } } },
+            teacher: { select: { profile: { select: { id: true, firstName: true, lastName: true } } } },
             semester: { select: { id: true, name: true } },
           },
         },

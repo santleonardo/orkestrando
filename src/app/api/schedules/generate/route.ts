@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
       include: {
         subject: { select: { id: true, code: true, name: true, workload: true } },
         teacher: {
-          select: { id: true, user: { select: { name: true } } },
+          select: { id: true, profile: { select: { firstName: true, lastName: true } } },
           include: { availability: { where: { semesterId: body.semesterId, isAvailable: true } } },
         },
         room: { select: { id: true, name: true, code: true, capacity: true } },
@@ -133,7 +133,7 @@ export async function POST(request: NextRequest) {
             classId: classItem.id,
             className: classItem.name,
             subjectName: classItem.subject.name,
-            teacherName: classItem.teacher?.user.name || 'Unknown',
+            teacherName: `${classItem.teacher?.profile?.firstName ?? ''} ${classItem.teacher?.profile?.lastName ?? ''}`.trim() || 'Desconhecido',
             date: sessionDate.toISOString(),
             startTime,
             endTime,

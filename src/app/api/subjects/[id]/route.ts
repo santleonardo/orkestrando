@@ -45,7 +45,7 @@ export async function GET(
         semester: { select: { id: true, name: true, startDate: true, endDate: true, isActive: true } },
         classes: {
           include: {
-            teacher: { select: { user: { select: { name: true } } } },
+            teacher: { select: { profile: { select: { firstName: true, lastName: true } } } },
             semester: { select: { name: true } },
             _count: { select: { enrollments: true, sessions: true } },
           },
@@ -118,7 +118,7 @@ export async function PUT(
       },
       include: {
         teacher: {
-          select: { id: true, role: true, user: { select: { id: true, name: true, email: true } } },
+          select: { id: true, role: true, profile: { select: { id: true, firstName: true, lastName: true, email: true } } },
         },
         semester: { select: { id: true, name: true } },
         _count: { select: { classes: true, materials: true } },

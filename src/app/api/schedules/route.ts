@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
           class: {
             include: {
               subject: { select: { id: true, code: true, name: true } },
-              teacher: { select: { id: true, user: { select: { id: true, name: true } } } },
+              teacher: { select: { id: true, profile: { select: { id: true, firstName: true, lastName: true } } } },
               semester: { select: { id: true, name: true } },
               _count: { select: { enrollments: true } },
             },
@@ -92,7 +92,7 @@ export async function GET(request: NextRequest) {
               type: 'TEACHER_CONFLICT',
               session1Id: s1.id,
               session2Id: s2.id,
-              description: `Teacher conflict: ${s1.class.teacher.user.name} has overlapping sessions on ${date1}`,
+              description: `Teacher conflict: ${s1.class.`${​teacher.profile?.firstName ?? ""} ${teacher.profile?.lastName ?? ""}`.trim()} has overlapping sessions on ${date1}`,
             })
           }
         }

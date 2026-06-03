@@ -49,13 +49,13 @@ export async function GET(request: NextRequest) {
         where,
         include: {
           student: {
-            select: { id: true, role: true, registrationNumber: true, user: { select: { id: true, name: true, email: true } } },
+            select: { id: true, role: true, registrationNumber: true, profile: { select: { id: true, firstName: true, lastName: true, email: true } } },
           },
           class: {
             select: {
               id: true, code: true, name: true,
               subject: { select: { id: true, code: true, name: true } },
-              teacher: { select: { id: true, user: { select: { name: true } } } },
+              teacher: { select: { id: true, profile: { select: { firstName: true, lastName: true } } } },
               semester: { select: { id: true, name: true } },
             },
           },
@@ -135,7 +135,7 @@ export async function POST(request: NextRequest) {
         },
         include: {
           student: {
-            select: { id: true, role: true, user: { select: { id: true, name: true } } },
+            select: { id: true, role: true, profile: { select: { id: true, firstName: true, lastName: true } } },
           },
           class: {
             select: { id: true, code: true, name: true, subject: { select: { code: true, name: true } } },
@@ -173,13 +173,13 @@ export async function POST(request: NextRequest) {
       },
       include: {
         student: {
-          select: { id: true, role: true, registrationNumber: true, user: { select: { id: true, name: true, email: true } } },
+          select: { id: true, role: true, registrationNumber: true, profile: { select: { id: true, firstName: true, lastName: true, email: true } } },
         },
         class: {
           select: {
             id: true, code: true, name: true,
             subject: { select: { id: true, code: true, name: true } },
-            teacher: { select: { id: true, user: { select: { name: true } } } },
+            teacher: { select: { id: true, profile: { select: { firstName: true, lastName: true } } } },
             semester: { select: { id: true, name: true } },
           },
         },

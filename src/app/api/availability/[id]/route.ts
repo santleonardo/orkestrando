@@ -79,7 +79,7 @@ export async function PUT(
       },
       include: {
         teacher: {
-          include: { user: { select: { id: true, name: true, email: true } } },
+          include: { profile: { select: { id: true, firstName: true, lastName: true, email: true } } },
         },
         semester: { select: { id: true, name: true } },
       },

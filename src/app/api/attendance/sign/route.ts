@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
       include: {
         class: {
           include: {
-            teacher: { select: { id: true, user: { select: { name: true } } } },
+            teacher: { select: { id: true, profile: { select: { firstName: true, lastName: true } } } },
           },
         },
       },

@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
         where,
         include: {
           teacher: {
-            include: { user: { select: { id: true, name: true, email: true } } },
+            include: { profile: { select: { id: true, firstName: true, lastName: true, email: true } } },
           },
           semester: { select: { id: true, name: true } },
         },
@@ -140,7 +140,7 @@ export async function POST(request: NextRequest) {
       },
       include: {
         teacher: {
-          include: { user: { select: { id: true, name: true, email: true } } },
+          include: { profile: { select: { id: true, firstName: true, lastName: true, email: true } } },
         },
         semester: { select: { id: true, name: true } },
       },

@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
             select: {
               id: true,
               role: true,
-              user: { select: { id: true, name: true, email: true } },
+              profile: { select: { id: true, firstName: true, lastName: true, email: true } },
             },
           },
         },

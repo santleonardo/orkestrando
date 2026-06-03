@@ -34,7 +34,7 @@ export async function GET(
         class: {
           include: {
             subject: { select: { code: true, name: true, credits: true } },
-            teacher: { select: { user: { select: { id: true, name: true } } } },
+            teacher: { select: { profile: { select: { id: true, firstName: true, lastName: true } } } },
             semester: { select: { id: true, name: true } },
             room: { select: { id: true, name: true, code: true, location: true } },
             sessions: {
@@ -67,7 +67,7 @@ export async function GET(
           sessionId: session.id,
           classId: enrollment.class.id,
           subject: enrollment.class.subject,
-          teacher: enrollment.class.teacher.user.name,
+          teacher: enrollment.class.`${​teacher.profile?.firstName ?? ""} ${teacher.profile?.lastName ?? ""}`.trim(),
           room: enrollment.class.room
             ? `${enrollment.class.room.name} (${enrollment.class.room.location || enrollment.class.room.code})`
             : null,

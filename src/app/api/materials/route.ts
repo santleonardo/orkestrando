@@ -72,7 +72,7 @@ export async function GET(request: NextRequest) {
           subject: { select: { id: true, code: true, name: true } },
           class: { select: { id: true, code: true, name: true } },
           uploader: {
-            select: { id: true, role: true, user: { select: { id: true, name: true, email: true } } },
+            select: { id: true, role: true, profile: { select: { id: true, firstName: true, lastName: true, email: true } } },
           },
         },
         orderBy: [{ createdAt: 'desc' }],
@@ -122,7 +122,7 @@ export async function POST(request: NextRequest) {
         subject: { select: { id: true, code: true, name: true } },
         class: { select: { id: true, code: true, name: true } },
         uploader: {
-          select: { id: true, role: true, user: { select: { id: true, name: true, email: true } } },
+          select: { id: true, role: true, profile: { select: { id: true, firstName: true, lastName: true, email: true } } },
         },
       },
     })

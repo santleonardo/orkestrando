@@ -40,7 +40,7 @@ export async function GET(
           include: {
             subject: { select: { id: true, code: true, name: true, credits: true } },
             teacher: {
-              select: { id: true, user: { select: { id: true, name: true, email: true } } },
+              select: { id: true, profile: { select: { id: true, firstName: true, lastName: true, email: true } } },
             },
             semester: { select: { id: true, name: true, startDate: true, endDate: true } },
             room: { select: { id: true, name: true, code: true } },
@@ -126,7 +126,7 @@ export async function PUT(
       data: updateData,
       include: {
         student: {
-          select: { id: true, role: true, user: { select: { id: true, name: true, email: true } } },
+          select: { id: true, role: true, profile: { select: { id: true, firstName: true, lastName: true, email: true } } },
         },
         class: {
           select: {

@@ -68,7 +68,7 @@ export async function GET(request: NextRequest) {
           enrollment: {
             include: {
               student: {
-                select: { id: true, role: true, registrationNumber: true, user: { select: { id: true, name: true, email: true } } },
+                select: { id: true, role: true, registrationNumber: true, profile: { select: { id: true, firstName: true, lastName: true, email: true } } },
               },
               class: {
                 select: { id: true, code: true, name: true, subject: { select: { code: true, name: true } } },

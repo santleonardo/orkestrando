@@ -48,7 +48,7 @@ export async function GET(
           where: { status: 'ACTIVE' },
           include: {
             student: {
-              select: { id: true, role: true, registrationNumber: true, user: { select: { id: true, name: true, email: true } } },
+              select: { id: true, role: true, registrationNumber: true, profile: { select: { id: true, firstName: true, lastName: true, email: true } } },
             },
           },
           take: 50,
@@ -138,7 +138,7 @@ export async function PUT(
       include: {
         subject: { select: { id: true, code: true, name: true, credits: true } },
         teacher: {
-          select: { id: true, role: true, user: { select: { id: true, name: true, email: true } } },
+          select: { id: true, role: true, profile: { select: { id: true, firstName: true, lastName: true, email: true } } },
         },
         semester: { select: { id: true, name: true } },
         room: { select: { id: true, name: true, code: true, capacity: true } },

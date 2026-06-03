@@ -49,7 +49,7 @@ export async function GET(
               select: {
                 id: true, code: true, name: true,
                 subject: { select: { code: true, name: true } },
-                teacher: { select: { user: { select: { name: true } } } },
+                teacher: { select: { profile: { select: { firstName: true, lastName: true } } } },
               },
             },
           },

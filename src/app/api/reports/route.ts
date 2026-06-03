@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
         where,
         include: {
           generator: {
-            select: { id: true, role: true, user: { select: { id: true, name: true, email: true } } },
+            select: { id: true, role: true, profile: { select: { id: true, firstName: true, lastName: true, email: true } } },
           },
         },
         orderBy: [{ createdAt: 'desc' }],
@@ -217,7 +217,7 @@ export async function POST(request: NextRequest) {
       },
       include: {
         generator: {
-          select: { id: true, role: true, user: { select: { id: true, name: true, email: true } } },
+          select: { id: true, role: true, profile: { select: { id: true, firstName: true, lastName: true, email: true } } },
         },
       },
     })
