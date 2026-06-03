@@ -121,7 +121,7 @@ export async function POST(request: NextRequest) {
       if (riskLevel !== 'LOW') {
         predictions.push({
           studentId: enrollment.studentId,
-          studentName: enrollment.`${​student.profile?.firstName ?? ""} ${student.profile?.lastName ?? ""}`.trim(),
+          studentName: enrollment.student?.user?.name ?? "",
           classId: enrollment.class.id,
           classCode: enrollment.class.code,
           riskLevel,
