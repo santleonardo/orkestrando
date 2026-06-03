@@ -40,7 +40,7 @@ interface GradeRecord {
   subjectCode: string
   subjectName: string
   assessment: string
-  grade: number
+  grade: number | null
   maxGrade: number
   date: string
   status: string
