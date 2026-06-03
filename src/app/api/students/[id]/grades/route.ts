@@ -71,7 +71,7 @@ export async function GET(
         subjectCode: e.class.subject.code,
         subjectName: e.class.subject.name,
         credits: e.class.subject.credits,
-        teacherName: e.class.`${​teacher.profile?.firstName ?? ""} ${teacher.profile?.lastName ?? ""}`.trim(),
+        teacherName: `${e.class.teacher?.profile?.firstName ?? ""} ${e.class.teacher?.profile?.lastName ?? ""}`.trim(),
         semesterName: e.class.semester.name,
         grade: e.grade,
         status: e.status,
