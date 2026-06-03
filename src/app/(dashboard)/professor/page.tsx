@@ -54,7 +54,7 @@ interface NotificationItem {
 }
 
 export default function ProfessorDashboardPage() {
-  const { profile, isLoading: authLoading } = useAuth()
+  const { user: profile, isLoading: authLoading } = useAuth()
   const [kpis, setKpis] = useState<KPICard[]>([])
   const [upcomingSessions, setUpcomingSessions] = useState<Session[]>([])
   const [notifications, setNotifications] = useState<NotificationItem[]>([])

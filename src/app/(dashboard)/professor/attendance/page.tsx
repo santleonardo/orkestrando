@@ -60,7 +60,7 @@ interface SignatureInfo {
 }
 
 export default function ProfessorAttendancePage() {
-  const { profile } = useAuth()
+  const { user: profile } = useAuth()
   const [sessions, setSessions] = useState<Session[]>([])
   const [pastSessions, setPastSessions] = useState<Session[]>([])
   const [selectedSession, setSelectedSession] = useState<Session | null>(null)

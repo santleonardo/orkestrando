@@ -74,7 +74,7 @@ const SUBJECT_COLORS = [
 ]
 
 export default function StudentSchedulePage() {
-  const { profile } = useAuth()
+  const { user: profile } = useAuth()
   const [schedule, setSchedule] = useState<ScheduleEntry[]>([])
   const [semesters, setSemesters] = useState<Semester[]>([])
   const [selectedSemester, setSelectedSemester] = useState<string>('')

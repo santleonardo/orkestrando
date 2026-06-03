@@ -75,7 +75,7 @@ interface MessageAttachment {
 }
 
 export default function StudentMessagesPage() {
-  const { profile } = useAuth()
+  const { user: profile } = useAuth()
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null)
   const [messages, setMessages] = useState<Message[]>([])

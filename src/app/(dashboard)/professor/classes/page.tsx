@@ -78,7 +78,7 @@ const WEEKDAY_LABELS: Record<string, string> = {
 }
 
 export default function ProfessorClassesPage() {
-  const { profile } = useAuth()
+  const { user: profile } = useAuth()
   const [classes, setClasses] = useState<ClassItem[]>([])
   const [semesters, setSemesters] = useState<Semester[]>([])
   const [selectedSemester, setSelectedSemester] = useState<string>('all')

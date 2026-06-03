@@ -61,7 +61,7 @@ interface ClassOption {
 }
 
 export default function ProfessorReportsPage() {
-  const { profile } = useAuth()
+  const { user: profile } = useAuth()
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 

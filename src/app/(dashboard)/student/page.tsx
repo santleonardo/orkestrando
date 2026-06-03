@@ -58,7 +58,7 @@ interface KPICard {
 }
 
 export default function StudentDashboardPage() {
-  const { profile, isLoading: authLoading } = useAuth()
+  const { user: profile, isLoading: authLoading } = useAuth()
   const [kpis, setKpis] = useState<KPICard[]>([])
   const [todaySessions, setTodaySessions] = useState<TodaySession[]>([])
   const [notifications, setNotifications] = useState<NotificationItem[]>([])

@@ -69,7 +69,7 @@ interface AcademicSummary {
 }
 
 export default function StudentReportsPage() {
-  const { profile } = useAuth()
+  const { user: profile } = useAuth()
   const [grades, setGrades] = useState<GradeRecord[]>([])
   const [subjects, setSubjects] = useState<SubjectReport[]>([])
   const [summary, setSummary] = useState<AcademicSummary | null>(null)

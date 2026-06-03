@@ -43,7 +43,7 @@ interface Subject {
 }
 
 export default function StudentSubjectsPage() {
-  const { profile } = useAuth()
+  const { user: profile } = useAuth()
   const [subjects, setSubjects] = useState<Subject[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)

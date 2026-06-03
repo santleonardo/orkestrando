@@ -73,7 +73,7 @@ const STATUS_CONFIG: Record<string, { label: string; badgeClass: string; icon: R
 }
 
 export default function StudentAttendancePage() {
-  const { profile } = useAuth()
+  const { user: profile } = useAuth()
   const [records, setRecords] = useState<AttendanceRecord[]>([])
   const [subjectAttendance, setSubjectAttendance] = useState<SubjectAttendance[]>([])
   const [overallPercentage, setOverallPercentage] = useState(0)

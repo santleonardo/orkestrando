@@ -91,7 +91,7 @@ function formatFileSize(bytes: number): string {
 }
 
 export default function ProfessorMaterialsPage() {
-  const { profile } = useAuth()
+  const { user: profile } = useAuth()
   const [materials, setMaterials] = useState<Material[]>([])
   const [classes, setClasses] = useState<ClassOption[]>([])
   const [isLoading, setIsLoading] = useState(true)

@@ -78,7 +78,7 @@ interface Semester {
 }
 
 export default function ProfessorAvailabilityPage() {
-  const { profile } = useAuth()
+  const { user: profile } = useAuth()
   const [semesters, setSemesters] = useState<Semester[]>([])
   const [selectedSemester, setSelectedSemester] = useState<string>('')
   const [grid, setGrid] = useState<Record<string, SlotStatus>>({})
