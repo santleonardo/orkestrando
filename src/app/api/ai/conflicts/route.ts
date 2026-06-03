@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
               type: 'TEACHER_OVERLAP',
               severity: 'CRITICAL',
               confidence: 1.0,
-              description: `Teacher "${s1.class.`${​teacher.profile?.firstName ?? ""} ${teacher.profile?.lastName ?? ""}`.trim()}" has overlapping sessions on ${date1}`,
+              description: `Teacher "${`${s1.class.teacher?.profile?.firstName ?? ""} ${s1.class.teacher?.profile?.lastName ?? ""}`.trim()}" has overlapping sessions on ${date1}`,
               recommendation: 'Reschedule one of the sessions to a different time or assign a substitute teacher',
               affectedEntities: [s1.id, s2.id],
             })
@@ -120,7 +120,7 @@ export async function POST(request: NextRequest) {
               type: 'TEACHER_TRANSITION',
               severity: 'LOW',
               confidence: 0.7,
-              description: `Teacher "${s1.class.`${​teacher.profile?.firstName ?? ""} ${teacher.profile?.lastName ?? ""}`.trim()}" has tight transition between rooms on ${date1} (${s1.endTime} - ${s2.startTime})`,
+              description: `Teacher "${`${s1.class.teacher?.profile?.firstName ?? ""} ${s1.class.teacher?.profile?.lastName ?? ""}`.trim()}" has tight transition between rooms on ${date1} (${s1.endTime} - ${s2.startTime})`,
               recommendation: 'Consider adding buffer time or scheduling sessions in nearby rooms',
               affectedEntities: [s1.id, s2.id],
             })
