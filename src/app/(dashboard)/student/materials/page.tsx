@@ -44,6 +44,7 @@ interface Material {
   className: string
   uploadedByName: string
   createdAt: string
+  isPublished?: boolean
 }
 
 interface SubjectOption {
