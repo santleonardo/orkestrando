@@ -1,0 +1,210 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Profile {
+  id          String   @id @default(cuid())
+  role        String   @default("STUDENT")
+  firstName   String
+  lastName    String
+  displayName String
+  email       String   @unique
+  phone       String?
+  password    String
+  avatar      String?
+  department  String?
+  course      String?
+  semester    Int?
+  shift       String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  teacherClasses     Class[]     @relation("TeacherClasses")
+  enrollments        Enrollment[]
+  materials          Material[]
+  sentMessages       Message[]     @relation("MessageSender")
+  conversations      ConversationParticipant[]
+  notifications      Notification[]
+  reports            Report[]
+  auditLogs          AuditLog[]
+  recordedAttendance Attendance[] @relation("Recorder")
+}
+
+model Subject {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  name      String
+  hoursWeek Int      @default(4)
+  credits  Int      @default(4)
+  sem      Int?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  classes Class[]
+}
+
+model Room {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  name        String
+  type        String   @default("CLASSROOM")
+  capacity    Int      @default(40)
+  building    String?
+  hasProjector    Boolean @default(true)
+  hasWhiteboard   Boolean @default(true)
+  hasComputers    Boolean @default(false)
+  hasAC           Boolean @default(false)
+  isActive        Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  classes Class[]
+}
+
+model Class {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  name        String?
+  weekday     String
+  startTime   String
+  endTime     String
+  vacancies   Int      @default(40)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  subjectId  String
+  subject    Subject  @relation(fields: [subjectId], references: [id])
+  teacherId  String
+  teacher    Profile  @relation("TeacherClasses", fields: [teacherId], references: [id])
+  roomId     String
+  room       Room      @relation(fields: [roomId], references: [id])
+
+  enrollments Enrollment[]
+  materials    Material[]
+}
+
+model Enrollment {
+  id         String   @id @default(cuid())
+  status     String   @default("ACTIVE")
+  finalGrade Float?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  classId   String
+  class     Class   @relation(fields: [classId], references: [id])
+  studentId String
+  student   Profile @relation(fields: [studentId], references: [id])
+
+  attendance Attendance[]
+}
+
+model Attendance {
+  id        String   @id @default(cuid())
+  status    String   @default("PRESENT")
+  notes     String?
+  date      DateTime @default(now())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  enrollmentId String
+  enrollment   Enrollment @relation(fields: [enrollmentId], references: [id])
+  recordedBy   String
+  recorder      Profile @relation("Recorder", fields: [recordedBy], references: [id])
+}
+
+model Material {
+  id        String   @id @default(cuid())
+  title     String
+  type      String   @default("PDF")
+  fileUrl   String
+  fileName  String
+  fileSize  Int      @default(0)
+  mimeType  String
+  isPublished Boolean @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  classId    String
+  class      Class   @relation(fields: [classId], references: [id])
+  uploadedBy String
+  uploader   Profile @relation(fields: [uploadedBy], references: [id])
+}
+
+model Conversation {
+  id         String   @id @default(cuid())
+  type       String   @default("DIRECT")
+  title      String?
+  createdAt  DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  participants ConversationParticipant[]
+  messages      Message[]
+}
+
+model ConversationParticipant {
+  id             String   @id @default(cuid())
+  joinedAt       DateTime @default(now())
+
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id])
+  profileId      String
+  profile        Profile @relation(fields: [profileId], references: [id])
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  content   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id])
+  senderId       String
+  sender         Profile @relation("MessageSender", fields: [senderId], references: [id])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  type      String   @default("INFO")
+  title     String
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  profileId String
+  profile   Profile @relation(fields: [profileId], references: [id])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  action    String
+  resource  String
+  resourceId String?
+  details   String?
+  ipAddress  String?
+  userAgent  String?
+  createdAt DateTime @default(now())
+
+  profileId String
+  profile   Profile @relation(fields: [profileId], references: [id])
+}
+
+model Report {
+  id          String   @id @default(cuid())
+  type        String
+  title       String
+  status      String   @default("COMPLETED")
+  fileUrl     String?
+  createdAt   DateTime @default(now())
+
+  generatedBy String
+  creator     Profile @relation(fields: [generatedBy], references: [id])
+}
