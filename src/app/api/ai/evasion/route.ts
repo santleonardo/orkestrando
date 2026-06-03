@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
     const where: Record<string, unknown> = {
       status: 'ACTIVE',
     }
-    if (body.semesterId) where.class = { ...where.class, semesterId: body.semesterId }
+    if (body.semesterId) where.class = { ...(where.class as Record<string, unknown>), semesterId: body.semesterId }
     if (body.studentId) where.studentId = body.studentId
     if (body.classId) where.classId = body.classId
 
