@@ -67,7 +67,7 @@ export async function GET(
           sessionId: session.id,
           classId: enrollment.class.id,
           subject: enrollment.class.subject,
-          teacher: enrollment.class.`${​teacher.profile?.firstName ?? ""} ${teacher.profile?.lastName ?? ""}`.trim(),
+          teacher: `${enrollment.class.teacher?.profile?.firstName ?? ""} ${enrollment.class.teacher?.profile?.lastName ?? ""}`.trim(),
           room: enrollment.class.room
             ? `${enrollment.class.room.name} (${enrollment.class.room.location || enrollment.class.room.code})`
             : null,
