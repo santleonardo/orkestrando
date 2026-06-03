@@ -465,7 +465,7 @@ export default function ProfessorMaterialsPage() {
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem onClick={() => togglePublish(material.id, material.isPublished)}>
                               {material.isPublished ? <EyeOff className="mr-2 size-3.5" /> : <Eye className="mr-2 size-3.5" />}
-                              {material.isPublished ? 'Unpublish' : 'Publish'}
+                              {material.isPublished ? 'Despublicar' : 'Publicar'}
                             </DropdownMenuItem>
                             <DropdownMenuItem className="text-red-600" onClick={() => deleteMaterial(material.id)}>
                               <Trash2 className="mr-2 size-3.5" /> Delete
