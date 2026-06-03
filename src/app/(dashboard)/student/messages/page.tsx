@@ -93,7 +93,7 @@ export default function StudentMessagesPage() {
 
         const convRes = await fetch('/api/conversations')
 
-        if (convRes.status === 'fulfilled' && convRes.ok) {
+        if (convRes.ok) {
           const data = await convRes.json()
           if (data.success && Array.isArray(data.data)) {
             setConversations(data.data)
