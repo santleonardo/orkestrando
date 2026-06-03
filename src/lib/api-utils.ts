@@ -296,8 +296,10 @@ export function getAuthProfile(request: NextRequest): AuthProfile {
  */
 export function requirePermission(profile: AuthProfile, requiredRole: string): void {
   const roleHierarchy: Record<string, number> = {
+    SUPER_ADMIN: 5,
     ADMIN: 4,
     COORDINATOR: 3,
+    PROFESSOR: 2,
     TEACHER: 2,
     STUDENT: 1,
   }
@@ -409,8 +411,8 @@ export async function createAuditLog(params: {
       resource: params.resource,
       resourceId: params.resourceId,
       details: params.details ? JSON.stringify(params.details) : undefined,
-      ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,
-      userAgent: request.headers.get('user-agent') || undefined,
+      ipAddress: params.request.headers.get('x-forwarded-for') || params.request.headers.get('x-real-ip') || undefined,
+      userAgent: params.request.headers.get('user-agent') || undefined,
     },
   })
 }
