@@ -3,589 +3,558 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
 }
 
-model Organization {
-  id         String   @id @default(cuid())
-  name       String
-  slug       String   @unique
-  logo       String?
-  settings   Json     @default("{}")
-  created_at DateTime @default(now())
-  updated_at DateTime @default(now())
+// ============================================================
+// ENUMS
+// ============================================================
 
-  profiles             Profile[]
-  courses              Course[]
-  subjects             Subject[]
-  rooms                Room[]
-  semesters            Semester[]
-  teacher_availabilities TeacherAvailability[]
-  teacher_blocks       TeacherBlock[]
-  holidays             Holiday[]
-  classes              Class[]
-  class_sessions       ClassSession[]
-  enrollments          Enrollment[]
-  attendances          Attendance[]
-  attendance_signatures AttendanceSignature[]
-  materials            Material[]
-  assignments          Assignment[]
-  assignment_submissions AssignmentSubmission[]
-  conversations        Conversation[]
-  messages             Message[]
-  notifications        Notification[]
-  audit_logs           AuditLog[]
-  reports              Report[]
-  session_settings     SessionSetting[]
-
-  @@map("organizations")
+enum Role {
+  ADMIN
+  COORDINATOR
+  TEACHER
+  STUDENT
 }
 
-model Profile {
-  id         String   @id @default(cuid())
-  user_id    String   @unique
-  org_id     String
-  role       String   @default("STUDENT") @db.Text
-  first_name String
-  last_name  String
-  email      String
-  phone      String?
-  avatar     String?
-  is_active  Boolean  @default(true)
-  created_at DateTime @default(now())
-  updated_at DateTime @default(now())
-
-  org                    Organization              @relation(fields: [org_id], references: [id], onDelete: Cascade)
-  teacher                Teacher?
-  student                Student?
-  coordinator            Coordinator?
-  sent_messages          Message[]                 @relation("MessageSender")
-  conversation_participants ConversationParticipant[]
-  notifications          Notification[]
-  audit_logs             AuditLog[]
-  reports                Report[]                  @relation("ReportCreator")
-  uploaded_materials     Material[]                @relation("MaterialUploader")
-  signed_attendances     AttendanceSignature[]     @relation("SignatureBy")
-  created_conversations  Conversation[]            @relation("ConversationCreator")
-
-  @@unique([org_id, email])
-  @@index([org_id, role])
-  @@index([org_id, is_active])
-  @@map("profiles")
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  JUSTIFIED
 }
 
-model Permission {
-  id          String @id @default(cuid())
-  name        String @unique
-  description String?
-  module      String
-
-  role_permissions RolePermission[]
-
-  @@map("permissions")
+enum AvailabilityType {
+  AVAILABLE
+  BLOCKED
+  VACATION
 }
 
-model RolePermission {
-  id            String  @id @default(cuid())
-  role_id       String
-  permission_id String
-  profile_id    String?
-
-  permission Permission @relation(fields: [permission_id], references: [id], onDelete: Cascade)
-
-  @@unique([role_id, permission_id, profile_id])
-  @@map("role_permissions")
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }
 
-model Teacher {
-  id               String   @id @default(cuid())
-  profile_id       String   @unique
-  department       String?
-  specializations  String[] @default([])
-  hire_date        DateTime?
-  bio              String?
-  created_at       DateTime @default(now())
-
-  profile              Profile               @relation(fields: [profile_id], references: [id], onDelete: Cascade)
-  classes              Class[]
-  teacher_availabilities TeacherAvailability[]
-  teacher_blocks       TeacherBlock[]
-  created_assignments  Assignment[]          @relation("AssignmentCreator")
-
-  @@map("teachers")
+enum LessonStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+  RESCHEDULED
+  REPLACEMENT
 }
 
-model Student {
-  id                String  @id @default(cuid())
-  profile_id        String  @unique
-  enrollment_number String
-  course            String?
-  semester          Int?
-  shift             String?
-  status            String  @default("active")
-  created_at        DateTime @default(now())
-
-  profile                Profile               @relation(fields: [profile_id], references: [id], onDelete: Cascade)
-  enrollments            Enrollment[]
-  attendances            Attendance[]
-  assignment_submissions AssignmentSubmission[]
-
-  @@map("students")
+enum MessagePriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
 }
 
-model Coordinator {
-  id         String  @id @default(cuid())
-  profile_id String  @unique
-  department String?
-  level      Int     @default(1)
-  created_at DateTime @default(now())
-
-  profile Profile @relation(fields: [profile_id], references: [id], onDelete: Cascade)
-
-  @@map("coordinators")
+enum MaterialType {
+  LESSON_MATERIAL
+  ASSIGNMENT
+  EXERCISE
+  REFERENCE
+  OTHER
 }
+
+// ============================================================
+// CORE MODELS
+// ============================================================
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  password      String
+  name          String
+  avatar        String?
+  phone         String?
+  role          Role      @default(STUDENT)
+  isActive      Boolean   @default(true)
+  lastLoginAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  teacherClasses           Class[]                   @relation("TeacherClasses")
+  teacherAvailabilities     TeacherAvailability[]
+  lessonsTaught             Lesson[]
+  attendanceRecords         Attendance[]
+  sentMessages              Message[]
+  messageReads              MessageRead[]
+  digitalSignatures         DigitalSignature[]
+  enrollments               Enrollment[]
+  auditLogsCreated          AuditLog[]                @relation("AuditCreator")
+  materialUploads           Material[]
+  assignmentSubmissions     AssignmentSubmission[]
+  materialVersions          MaterialVersion[]
+  conversationParticipants  ConversationParticipant[]
+  reportsGenerated          Report[]                  @relation("ReportGenerator")
+
+  @@index([email])
+  @@index([role])
+}
+
+// ============================================================
+// ACADEMIC MANAGEMENT
+// ============================================================
 
 model Course {
-  id            String  @id @default(cuid())
-  org_id        String
-  name          String
-  code          String
-  description   String?
-  duration      Int?
-  total_credits Int     @default(0)
-  is_active     Boolean @default(true)
-  created_at    DateTime @default(now())
+  id          String   @id @default(cuid())
+  name        String
+  code        String   @unique
+  description String?
+  duration    Int      @default(8)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  org      Organization @relation(fields: [org_id], references: [id], onDelete: Cascade)
-  subjects Subject[]
+  disciplines Discipline[]
 
-  @@unique([org_id, code])
-  @@map("courses")
+  @@index([code])
 }
 
-model Subject {
-  id           String   @id @default(cuid())
-  org_id       String
-  course_id    String?
-  name         String
-  code         String
-  description  String?
-  credits      Int      @default(0)
-  workload     Int      @default(0)
-  semester     Int?
-  is_elective  Boolean  @default(false)
-  is_active    Boolean  @default(true)
-  prerequisites String[] @default([])
-  created_at   DateTime @default(now())
+model Discipline {
+  id          String   @id @default(cuid())
+  name        String
+  code        String   @unique
+  description String?
+  workload    Int      @default(60)
+  courseId    String
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  org       Organization @relation(fields: [org_id], references: [id], onDelete: Cascade)
-  course    Course?      @relation(fields: [course_id], references: [id], onDelete: SetNull)
-  classes   Class[]
-  materials Material[]
-  assignments Assignment[]
-
-  @@unique([org_id, code])
-  @@map("subjects")
-}
-
-model Room {
-  id        String  @id @default(cuid())
-  org_id    String
-  name      String
-  code      String
-  capacity  Int     @default(0)
-  type      String  @default("CLASSROOM")
-  building  String?
-  floor     Int?
-  resources String[] @default([])
-  is_active Boolean @default(true)
-  created_at DateTime @default(now())
-
-  org     Organization @relation(fields: [org_id], references: [id], onDelete: Cascade)
+  course  Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
   classes Class[]
 
-  @@unique([org_id, code])
-  @@map("rooms")
+  @@unique([code, courseId])
+  @@index([courseId])
 }
 
 model Semester {
-  id         String   @id @default(cuid())
-  org_id     String
-  name       String
-  start_date DateTime
-  end_date   DateTime
-  status     String   @default("UPCOMING") @db.Text
-  created_at DateTime @default(now())
-
-  org                    Organization          @relation(fields: [org_id], references: [id], onDelete: Cascade)
-  classes                Class[]
-  enrollments            Enrollment[]
-  teacher_availabilities TeacherAvailability[]
-  teacher_blocks         TeacherBlock[]
-  session_settings       SessionSetting[]
-
-  @@map("semesters")
-}
-
-model TeacherAvailability {
-  id         String  @id @default(cuid())
-  org_id     String
-  teacher_id String
-  semester_id String
-  weekday    String  @db.Text
-  start_time String
-  end_time   String
-  is_active  Boolean  @default(true)
-  created_at DateTime @default(now())
-  updated_at DateTime @default(now())
-
-  org      Organization @relation(fields: [org_id], references: [id], onDelete: Cascade)
-  teacher  Teacher      @relation(fields: [teacher_id], references: [id], onDelete: Cascade)
-  semester Semester     @relation(fields: [semester_id], references: [id], onDelete: Cascade)
-
-  @@unique([teacher_id, semester_id, weekday, start_time, end_time])
-  @@map("teacher_availabilities")
-}
-
-model TeacherBlock {
   id          String   @id @default(cuid())
-  org_id      String
-  teacher_id  String
-  semester_id String
-  date        DateTime
-  start_time  String
-  end_time    String
-  reason      String
-  description String?
-  created_at  DateTime @default(now())
+  name        String
+  code        String   @unique
+  startDate   DateTime
+  endDate     DateTime
+  isActive    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  org      Organization @relation(fields: [org_id], references: [id], onDelete: Cascade)
-  teacher  Teacher      @relation(fields: [teacher_id], references: [id], onDelete: Cascade)
-  semester Semester     @relation(fields: [semester_id], references: [id], onDelete: Cascade)
+  classes            Class[]
+  academicCalendars  AcademicCalendar[]
+  availabilities     TeacherAvailability[]
 
-  @@map("teacher_blocks")
+  @@index([startDate])
 }
 
-model Holiday {
-  id         String   @id @default(cuid())
-  org_id     String
-  date       DateTime
-  name       String
-  type       String   @default("NATIONAL")
-  created_at DateTime @default(now())
+model Room {
+  id          String   @id @default(cuid())
+  name        String
+  code        String   @unique
+  capacity    Int
+  type        String   @default("classroom")
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  org Organization @relation(fields: [org_id], references: [id], onDelete: Cascade)
+  lessons Lesson[]
 
-  @@unique([org_id, date])
-  @@map("holidays")
+  @@index([type])
 }
 
 model Class {
-  id               String  @id @default(cuid())
-  org_id           String
-  subject_id       String
-  semester_id      String
-  teacher_id       String
-  room_id          String?
-  name             String
-  code             String
-  schedule         Json    @default("[]")
-  max_students     Int     @default(0)
-  current_students Int     @default(0)
-  status           String  @default("ACTIVE") @db.Text
-  created_at       DateTime @default(now())
-
-  org         Organization  @relation(fields: [org_id], references: [id], onDelete: Cascade)
-  subject     Subject       @relation(fields: [subject_id], references: [id], onDelete: Cascade)
-  semester    Semester      @relation(fields: [semester_id], references: [id], onDelete: Cascade)
-  teacher     Teacher       @relation(fields: [teacher_id], references: [id], onDelete: Cascade)
-  room        Room?         @relation(fields: [room_id], references: [id], onDelete: SetNull)
-  enrollments Enrollment[]
-  sessions    ClassSession[]
-  materials   Material[]
-  assignments Assignment[]
-
-  @@unique([org_id, code])
-  @@map("classes")
-}
-
-model ClassSession {
   id            String   @id @default(cuid())
-  org_id        String
-  class_id      String
-  date          DateTime
-  start_time    String
-  end_time      String
-  topic         String?
-  description   String?
-  status        String   @default("SCHEDULED") @db.Text
-  teacher_notes String?
-  created_at    DateTime @default(now())
+  name          String
+  code          String   @unique
+  disciplineId  String
+  semesterId    String
+  teacherId     String
+  schedule      String
+  room          String?
+  maxStudents   Int      @default(40)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  org         Organization          @relation(fields: [org_id], references: [id], onDelete: Cascade)
-  class       Class                 @relation(fields: [class_id], references: [id], onDelete: Cascade)
-  attendances Attendance[]
-  signatures  AttendanceSignature[]
+  discipline Discipline @relation(fields: [disciplineId], references: [id])
+  semester   Semester   @relation(fields: [semesterId], references: [id])
+  teacher    User       @relation("TeacherClasses", fields: [teacherId], references: [id])
+  enrollments Enrollment[]
+  lessons    Lesson[]
+  materials  Material[]
 
-  @@map("class_sessions")
+  @@index([disciplineId])
+  @@index([semesterId])
+  @@index([teacherId])
 }
 
 model Enrollment {
-  id          String    @id @default(cuid())
-  org_id      String
-  student_id  String
-  class_id    String
-  semester_id String
-  status      String    @default("ACTIVE")
-  enrolled_at DateTime  @default(now())
-  dropped_at  DateTime?
+  id         String   @id @default(cuid())
+  studentId  String
+  classId    String
+  status     String   @default("active")
+  grade      Float?
+  enrolledAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
-  org      Organization @relation(fields: [org_id], references: [id], onDelete: Cascade)
-  student  Student      @relation(fields: [student_id], references: [id], onDelete: Cascade)
-  class    Class        @relation(fields: [class_id], references: [id], onDelete: Cascade)
-  semester Semester     @relation(fields: [semester_id], references: [id], onDelete: Cascade)
+  student User  @relation(fields: [studentId], references: [id])
+  class   Class @relation(fields: [classId], references: [id])
 
-  @@unique([student_id, class_id, semester_id])
-  @@map("enrollments")
+  @@unique([studentId, classId])
+  @@index([studentId])
+  @@index([classId])
 }
+
+// ============================================================
+// ACADEMIC CALENDAR
+// ============================================================
+
+model AcademicCalendar {
+  id                String   @id @default(cuid())
+  title             String
+  description       String?
+  date              DateTime
+  type              String
+  semesterId        String?
+  isRecurring       Boolean  @default(false)
+  recurrencePattern String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  semester Semester? @relation(fields: [semesterId], references: [id], onDelete: SetNull)
+
+  @@index([date])
+  @@index([type])
+  @@index([semesterId])
+}
+
+// ============================================================
+// TEACHER AVAILABILITY
+// ============================================================
+
+model TeacherAvailability {
+  id            String           @id @default(cuid())
+  teacherId     String
+  semesterId    String
+  dayOfWeek     Int
+  startTime     String
+  endTime       String
+  type          AvailabilityType @default(AVAILABLE)
+  reason        String?
+  status        ApprovalStatus   @default(PENDING)
+  approvedBy    String?
+  approvedAt    DateTime?
+  effectiveFrom DateTime
+  effectiveTo   DateTime?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  teacher  User     @relation(fields: [teacherId], references: [id])
+  semester Semester @relation(fields: [semesterId], references: [id])
+
+  @@index([teacherId])
+  @@index([semesterId])
+  @@index([status])
+}
+
+// ============================================================
+// LESSONS (Auto-generated from Classes)
+// ============================================================
+
+model Lesson {
+  id             String       @id @default(cuid())
+  classId        String
+  teacherId      String
+  date           DateTime
+  startTime      String
+  endTime        String
+  roomId         String?
+  roomCode       String?
+  status         LessonStatus @default(SCHEDULED)
+  topic          String?
+  notes          String?
+  rescheduledFrom String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  class             Class             @relation(fields: [classId], references: [id])
+  teacher           User              @relation(fields: [teacherId], references: [id])
+  room              Room?             @relation(fields: [roomId], references: [id])
+  attendance        Attendance[]
+  lessonMaterials   LessonMaterial[]
+
+  @@index([classId])
+  @@index([teacherId])
+  @@index([date])
+  @@index([status])
+}
+
+// ============================================================
+// ATTENDANCE
+// ============================================================
 
 model Attendance {
-  id               String   @id @default(cuid())
-  org_id           String
-  class_session_id String
-  student_id       String
-  status           String   @default("ABSENT") @db.Text
-  noted_by         String?
-  notes            String?
-  created_at       DateTime @default(now())
-  updated_at       DateTime @default(now())
+  id         String           @id @default(cuid())
+  lessonId   String
+  studentId  String
+  status     AttendanceStatus @default(PRESENT)
+  notes      String?
+  recordedBy String
+  recordedAt DateTime         @default(now())
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
 
-  org           Organization          @relation(fields: [org_id], references: [id], onDelete: Cascade)
-  class_session ClassSession          @relation(fields: [class_session_id], references: [id], onDelete: Cascade)
-  student       Student               @relation(fields: [student_id], references: [id], onDelete: Cascade)
-  signatures    AttendanceSignature[]
+  lesson  Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  student User   @relation(fields: [studentId], references: [id])
 
-  @@unique([class_session_id, student_id])
-  @@map("attendances")
+  @@unique([lessonId, studentId])
+  @@index([lessonId])
+  @@index([studentId])
 }
 
-model AttendanceSignature {
-  id               String   @id @default(cuid())
-  org_id           String
-  attendance_id    String
-  class_session_id String
-  signed_by        String
-  signature_type   String   @default("ATTENDANCE") @db.Text
-  ip_address       String?
-  user_agent       String?
-  device           String?
-  created_at       DateTime @default(now())
+// ============================================================
+// DIGITAL SIGNATURES
+// ============================================================
 
-  org           Organization @relation(fields: [org_id], references: [id], onDelete: Cascade)
-  attendance    Attendance   @relation(fields: [attendance_id], references: [id], onDelete: Cascade)
-  class_session ClassSession @relation(fields: [class_session_id], references: [id], onDelete: Cascade)
-  signer        Profile      @relation("SignatureBy", fields: [signed_by], references: [id], onDelete: Cascade)
+model DigitalSignature {
+  id         String   @id @default(cuid())
+  userId     String
+  entityType String
+  entityId   String
+  ipAddress  String
+  userAgent  String
+  deviceInfo String?
+  hash       String
+  createdAt  DateTime @default(now())
 
-  @@map("attendance_signatures")
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([entityType])
+  @@index([entityId])
 }
+
+// ============================================================
+// MATERIALS
+// ============================================================
 
 model Material {
-  id           String  @id @default(cuid())
-  org_id       String
-  subject_id   String
-  class_id     String?
-  uploaded_by  String
-  title        String
-  description  String?
-  type         String  @default("PDF") @db.Text
-  file_path    String
-  file_size    BigInt  @default(0)
-  version      Int     @default(1)
-  is_published Boolean @default(false)
-  created_at   DateTime @default(now())
-  updated_at   DateTime @default(now())
-
-  org      Organization @relation(fields: [org_id], references: [id], onDelete: Cascade)
-  subject  Subject      @relation(fields: [subject_id], references: [id], onDelete: Cascade)
-  class    Class?       @relation(fields: [class_id], references: [id], onDelete: SetNull)
-  uploader Profile      @relation("MaterialUploader", fields: [uploaded_by], references: [id])
-
-  @@map("materials")
-}
-
-model Assignment {
-  id          String   @id @default(cuid())
-  org_id      String
-  subject_id  String
-  class_id    String
-  created_by  String
+  id          String       @id @default(cuid())
   title       String
   description String?
-  due_date    DateTime
-  max_grade   Decimal  @default(10.0) @db.Decimal(5, 2)
-  status      String   @default("PENDING") @db.Text
-  created_at  DateTime @default(now())
-  updated_at  DateTime @default(now())
+  type        MaterialType @default(LESSON_MATERIAL)
+  fileName    String
+  fileSize    Int
+  fileUrl     String
+  mimeType    String
+  version     Int          @default(1)
+  classId     String
+  lessonId    String?
+  uploadedBy  String
+  isActive    Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
 
-  org         Organization           @relation(fields: [org_id], references: [id], onDelete: Cascade)
-  subject     Subject                @relation(fields: [subject_id], references: [id], onDelete: Cascade)
-  class       Class                  @relation(fields: [class_id], references: [id], onDelete: Cascade)
-  creator     Teacher                @relation("AssignmentCreator", fields: [created_by], references: [id], onDelete: Cascade)
-  submissions AssignmentSubmission[]
+  class            Class                   @relation(fields: [classId], references: [id])
+  uploader         User                    @relation(fields: [uploadedBy], references: [id])
+  versions         MaterialVersion[]
+  lessonMaterials  LessonMaterial[]
+  submissions      AssignmentSubmission[]
 
-  @@map("assignments")
+  @@index([classId])
+  @@index([uploadedBy])
+  @@index([type])
+}
+
+model MaterialVersion {
+  id         String   @id @default(cuid())
+  materialId String
+  fileName   String
+  fileSize   Int
+  fileUrl    String
+  version    Int
+  uploadedBy String
+  createdAt  DateTime @default(now())
+
+  material Material @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  uploader User     @relation(fields: [uploadedBy], references: [id])
+
+  @@index([materialId])
+}
+
+model LessonMaterial {
+  id         String   @id @default(cuid())
+  lessonId   String
+  materialId String
+  createdAt  DateTime @default(now())
+
+  lesson   Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  material Material @relation(fields: [materialId], references: [id], onDelete: Cascade)
+
+  @@unique([lessonId, materialId])
 }
 
 model AssignmentSubmission {
-  id            String    @id @default(cuid())
-  org_id        String
-  assignment_id String
-  student_id    String
-  file_path     String
-  file_name     String
-  file_size     BigInt    @default(0)
-  grade         Decimal?  @db.Decimal(5, 2)
-  feedback      String?
-  submitted_at  DateTime  @default(now())
-  graded_at     DateTime?
+  id         String   @id @default(cuid())
+  materialId String
+  studentId  String
+  fileName   String
+  fileSize   Int
+  fileUrl    String
+  grade      Float?
+  feedback   String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
-  org        Organization @relation(fields: [org_id], references: [id], onDelete: Cascade)
-  assignment Assignment   @relation(fields: [assignment_id], references: [id], onDelete: Cascade)
-  student    Student      @relation(fields: [student_id], references: [id], onDelete: Cascade)
+  material Material @relation(fields: [materialId], references: [id])
+  student  User     @relation(fields: [studentId], references: [id])
 
-  @@unique([assignment_id, student_id])
-  @@map("assignment_submissions")
+  @@index([materialId])
+  @@index([studentId])
 }
 
-model Conversation {
-  id              String    @id @default(cuid())
-  org_id          String
-  type            String    @default("DIRECT") @db.Text
-  title           String?
-  created_by      String?
-  last_message_at DateTime?
-  created_at      DateTime  @default(now())
+// ============================================================
+// MESSAGING
+// ============================================================
 
-  org          Organization              @relation(fields: [org_id], references: [id], onDelete: Cascade)
-  creator      Profile?                  @relation("ConversationCreator", fields: [created_by], references: [id], onDelete: SetNull)
+model Conversation {
+  id        String   @id @default(cuid())
+  type      String   @default("direct")
+  title     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   participants ConversationParticipant[]
   messages     Message[]
-
-  @@map("conversations")
 }
 
 model ConversationParticipant {
-  id              String    @id @default(cuid())
-  conversation_id String
-  profile_id      String
-  last_read_at    DateTime?
-  created_at      DateTime  @default(now())
+  id             String    @id @default(cuid())
+  conversationId String
+  userId         String
+  lastReadAt     DateTime?
+  joinedAt       DateTime  @default(now())
 
-  conversation Conversation @relation(fields: [conversation_id], references: [id], onDelete: Cascade)
-  profile      Profile      @relation(fields: [profile_id], references: [id], onDelete: Cascade)
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id])
 
-  @@unique([conversation_id, profile_id])
-  @@map("conversation_participants")
+  @@unique([conversationId, userId])
+  @@index([conversationId])
+  @@index([userId])
 }
 
 model Message {
-  id              String   @id @default(cuid())
-  org_id          String
-  conversation_id String
-  sender_id       String
-  content         String
-  parent_id       String?
-  created_at      DateTime @default(now())
+  id             String           @id @default(cuid())
+  conversationId String
+  senderId       String
+  content        String
+  priority       MessagePriority @default(NORMAL)
+  replyToId      String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
 
-  org          Organization        @relation(fields: [org_id], references: [id], onDelete: Cascade)
-  conversation Conversation        @relation(fields: [conversation_id], references: [id], onDelete: Cascade)
-  sender       Profile             @relation("MessageSender", fields: [sender_id], references: [id], onDelete: Cascade)
-  parent       Message?            @relation("MessageReply", fields: [parent_id], references: [id], onDelete: SetNull)
-  replies      Message[]           @relation("MessageReply")
+  conversation Conversation @relation(fields: [conversationId], references: [id])
+  sender       User         @relation(fields: [senderId], references: [id])
+  replyTo      Message?     @relation("MessageReply", fields: [replyToId], references: [id])
+  replies      Message[]     @relation("MessageReply")
   attachments  MessageAttachment[]
+  reads        MessageRead[]
 
-  @@map("messages")
+  @@index([conversationId])
+  @@index([senderId])
+  @@index([createdAt])
 }
 
 model MessageAttachment {
-  id         String   @id @default(cuid())
-  message_id String
-  file_path  String
-  file_name  String
-  file_size  BigInt   @default(0)
-  mime_type  String?
-  created_at DateTime @default(now())
+  id        String   @id @default(cuid())
+  messageId String
+  fileName  String
+  fileSize  Int
+  fileUrl   String
+  mimeType  String
+  createdAt DateTime @default(now())
 
-  message Message @relation(fields: [message_id], references: [id], onDelete: Cascade)
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
 
-  @@map("message_attachments")
+  @@index([messageId])
 }
 
-model Notification {
-  id         String   @id @default(cuid())
-  org_id     String
-  profile_id String
-  title      String
-  content    String?
-  type       String   @default("INFO") @db.Text
-  data       Json     @default("{}")
-  is_read    Boolean  @default(false)
-  created_at DateTime @default(now())
+model MessageRead {
+  id        String   @id @default(cuid())
+  messageId String
+  userId    String
+  readAt    DateTime @default(now())
 
-  org     Organization @relation(fields: [org_id], references: [id], onDelete: Cascade)
-  profile Profile      @relation(fields: [profile_id], references: [id], onDelete: Cascade)
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id])
 
-  @@map("notifications")
+  @@unique([messageId, userId])
+  @@index([messageId])
 }
 
-model AuditLog {
-  id          String   @id @default(cuid())
-  org_id      String
-  profile_id  String?
-  action      String
-  resource    String
-  resource_id String?
-  details     Json     @default("{}")
-  ip_address  String?
-  user_agent  String?
-  created_at  DateTime @default(now())
-
-  org     Organization @relation(fields: [org_id], references: [id], onDelete: Cascade)
-  profile Profile?     @relation(fields: [profile_id], references: [id], onDelete: SetNull)
-
-  @@map("audit_logs")
-}
+// ============================================================
+// REPORTS
+// ============================================================
 
 model Report {
-  id           String   @id @default(cuid())
-  org_id       String
-  title        String
-  type         String
-  filters      Json     @default("{}")
-  data         Json     @default("{}")
-  generated_by String
-  created_at   DateTime @default(now())
+  id          String   @id @default(cuid())
+  title       String
+  type        String
+  data        String
+  generatedBy String
+  parameters  String?
+  createdAt   DateTime @default(now())
 
-  org     Organization @relation(fields: [org_id], references: [id], onDelete: Cascade)
-  creator Profile      @relation("ReportCreator", fields: [generated_by], references: [id], onDelete: Cascade)
+  generator User @relation("ReportGenerator", fields: [generatedBy], references: [id])
 
-  @@map("reports")
+  @@index([type])
+  @@index([generatedBy])
+  @@index([createdAt])
 }
 
-model SessionSetting {
-  id            String   @id @default(cuid())
-  org_id        String
-  semester_id   String
-  setting_key   String
-  setting_value Json     @default("{}")
-  created_at    DateTime @default(now())
-  updated_at    DateTime @default(now())
+// ============================================================
+// AUDIT LOG
+// ============================================================
 
-  org      Organization @relation(fields: [org_id], references: [id], onDelete: Cascade)
-  semester Semester     @relation(fields: [semester_id], references: [id], onDelete: Cascade)
+model AuditLog {
+  id        String   @id @default(cuid())
+  action    String
+  entity    String
+  entityId  String?
+  details   String?
+  userId    String?
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
 
-  @@unique([semester_id, setting_key])
-  @@map("session_settings")
+  user User? @relation("AuditCreator", fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([action])
+  @@index([entity])
+  @@index([userId])
+  @@index([createdAt])
+}
+
+// ============================================================
+// AI SUGGESTIONS
+// ============================================================
+
+model AiSuggestion {
+  id        String   @id @default(cuid())
+  type      String
+  targetId  String?
+  prompt    String
+  response  String
+  parameters String?
+  createdBy String
+  createdAt DateTime @default(now())
+
+  @@index([type])
+  @@index([createdBy])
+  @@index([createdAt])
 }
