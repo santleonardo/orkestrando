@@ -1,42 +1,52 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { requireRole, AuthError } from '@/lib/get-user'
 
 export async function GET(request: NextRequest) {
   try {
+    const user = await requireRole(request, ['ADMIN', 'COORDINATOR'])
+
     const { searchParams } = new URL(request.url)
-    const profileId = searchParams.get('profileId')
     const action = searchParams.get('action')
-    const resource = searchParams.get('resource')
-    const page = parseInt(searchParams.get('page') || '1')
-    const pageSize = parseInt(searchParams.get('pageSize') || '20')
+    const entity = searchParams.get('entity')
+    const userId = searchParams.get('userId')
+    const startDate = searchParams.get('startDate')
+    const endDate = searchParams.get('endDate')
+    const page = Number(searchParams.get('page')) || 1
+    const limit = Number(searchParams.get('limit')) || 100
 
     const where: Record<string, unknown> = {}
-    if (profileId) where.profileId = profileId
     if (action) where.action = action
-    if (resource) where.resource = resource
+    if (entity) where.entity = entity
+    if (userId) where.userId = userId
+    if (startDate && endDate) {
+      where.createdAt = { gte: new Date(startDate), lte: new Date(endDate) }
+    } else if (startDate) {
+      where.createdAt = { gte: new Date(startDate) }
+    }
 
     const [logs, total] = await Promise.all([
       db.auditLog.findMany({
         where,
         include: {
-          profile: { select: { id: true, firstName: true, lastName: true, displayName: true } },
+          user: { select: { id: true, name: true, email: true } },
         },
-        skip: (page - 1) * pageSize,
-        take: pageSize,
         orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
       }),
       db.auditLog.count({ where }),
     ])
 
-    const totalPages = Math.ceil(total / pageSize)
-
     return NextResponse.json({
-      success: true,
       data: logs,
-      pagination: { page, pageSize, total, totalPages, hasNextPage: page < totalPages, hasPreviousPage: page > 1 },
+      meta: { total, page, limit, pages: Math.ceil(total / limit) },
     })
-  } catch (error: unknown) {
-    const msg = error instanceof Error ? error.message : 'Failed to fetch audit logs'
-    return NextResponse.json({ success: false, error: msg }, { status: 500 })
+  } catch (error) {
+    if (error instanceof AuthError) {
+      return NextResponse.json({ error: error.message }, { status: error.status })
+    }
+    console.error('Error fetching audit logs:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
