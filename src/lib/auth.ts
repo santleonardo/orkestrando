@@ -1,33 +1,67 @@
-import bcrypt from 'bcryptjs'
-import { db } from './db'
+import type { NextAuthOptions } from 'next-auth'
+import CredentialsProvider from 'next-auth/providers/credentials'
+import { compare } from 'bcryptjs'
+import { db } from '@/lib/db'
 
-// In-memory token store (simplified)
-const tokenStore = new Map<string, { profileId: string; role: string; expiresAt: number }>()
+export const authOptions: NextAuthOptions = {
+  providers: [
+    CredentialsProvider({
+      name: 'credentials',
+      credentials: {
+        email: { label: 'Email', type: 'email' },
+        password: { label: 'Password', type: 'password' },
+      },
+      async authorize(credentials) {
+        if (!credentials?.email || !credentials?.password) {
+          return null
+        }
 
-export async function hashPassword(password: string): Promise<string> {
-  return bcrypt.hash(password, 10)
+        const user = await db.user.findUnique({
+          where: { email: credentials.email },
+        })
+
+        if (!user || !user.isActive) {
+          return null
+        }
+
+        const isValidPassword = await compare(credentials.password, user.password)
+        if (!isValidPassword) {
+          return null
+        }
+
+        return {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: user.role,
+          image: user.avatar,
+        }
+      },
+    }),
+  ],
+  session: {
+    strategy: 'jwt',
+  },
+  callbacks: {
+    async jwt({ token, user }) {
+      if (user) {
+        token.id = user.id
+        token.role = (user as { role: string }).role
+      }
+      return token
+    },
+    async session({ session, token }) {
+      if (session.user) {
+        (session.user as { id: string }).id = token.id as string
+        ;(session.user as { role: string }).role = token.role as string
+      }
+      return session
+    },
+  },
+  pages: {
+    signIn: '/',
+  },
+  secret: process.env.NEXTAUTH_SECRET || 'orkestrando-default-secret-key-change-in-production',
 }
 
-export async function verifyPassword(password: string, hash: string): Promise<boolean> {
-  return bcrypt.compare(password, hash)
-}
-
-export function generateToken(profileId: string, role: string): string {
-  const token = crypto.randomUUID()
-  tokenStore.set(token, { profileId, role, expiresAt: Date.now() + 24 * 60 * 60 * 1000 })
-  return token
-}
-
-export function validateToken(token: string): { profileId: string; role: string } | null {
-  const entry = tokenStore.get(token)
-  if (!entry) return null
-  if (Date.now() > entry.expiresAt) {
-    tokenStore.delete(token)
-    return null
-  }
-  return { profileId: entry.profileId, role: entry.role }
-}
-
-export function revokeToken(token: string): void {
-  tokenStore.delete(token)
-}
+export { getServerSession } from 'next-auth'
