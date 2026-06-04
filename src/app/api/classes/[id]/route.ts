@@ -1,47 +1,101 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { requireRole, AuthError } from '@/lib/get-user'
 
-export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
     const { id } = await params
-    const cls = await db.class.findUnique({
+    const classData = await db.class.findUnique({
       where: { id },
       include: {
-        subject: true,
-        teacher: { select: { id: true, firstName: true, lastName: true, displayName: true, email: true } },
-        room: true,
-        enrollments: { include: { student: { select: { id: true, firstName: true, lastName: true, displayName: true } } } },
+        discipline: {
+          include: { course: true },
+        },
+        semester: true,
+        teacher: {
+          select: { id: true, name: true, email: true, phone: true, avatar: true },
+        },
+        enrollments: {
+          include: {
+            student: { select: { id: true, name: true, email: true } },
+          },
+        },
+        lessons: {
+          orderBy: { date: 'asc' },
+        },
+        materials: {
+          orderBy: { createdAt: 'desc' },
+        },
+        _count: { select: { enrollments: true, lessons: true, materials: true } },
       },
     })
-    if (!cls) {
-      return NextResponse.json({ success: false, error: 'Class not found' }, { status: 404 })
+
+    if (!classData) {
+      return NextResponse.json({ error: 'Class not found' }, { status: 404 })
     }
-    return NextResponse.json({ success: true, data: cls })
-  } catch (error: unknown) {
-    const msg = error instanceof Error ? error.message : 'Failed to fetch class'
-    return NextResponse.json({ success: false, error: msg }, { status: 500 })
+
+    return NextResponse.json({ data: classData })
+  } catch (error) {
+    console.error('Error fetching class:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 
-export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
+    const user = await requireRole(request, ['ADMIN', 'COORDINATOR'])
+
     const { id } = await params
     const body = await request.json()
-    const cls = await db.class.update({ where: { id }, data: body })
-    return NextResponse.json({ success: true, data: cls })
-  } catch (error: unknown) {
-    const msg = error instanceof Error ? error.message : 'Failed to update class'
-    return NextResponse.json({ success: false, error: msg }, { status: 500 })
+
+    const classData = await db.class.update({
+      where: { id },
+      data: {
+        ...(body.name && { name: body.name }),
+        ...(body.code && { code: body.code }),
+        ...(body.teacherId && { teacherId: body.teacherId }),
+        ...(body.schedule && { schedule: JSON.stringify(body.schedule) }),
+        ...(body.room !== undefined && { room: body.room }),
+        ...(body.maxStudents !== undefined && { maxStudents: body.maxStudents }),
+        ...(body.isActive !== undefined && { isActive: body.isActive }),
+      },
+    })
+
+    return NextResponse.json({ data: classData })
+  } catch (error) {
+    if (error instanceof AuthError) {
+      return NextResponse.json({ error: error.message }, { status: error.status })
+    }
+    console.error('Error updating class:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
+    const user = await requireRole(request, ['ADMIN', 'COORDINATOR'])
+
     const { id } = await params
-    await db.class.delete({ where: { id } })
-    return NextResponse.json({ success: true, data: null })
-  } catch (error: unknown) {
-    const msg = error instanceof Error ? error.message : 'Failed to delete class'
-    return NextResponse.json({ success: false, error: msg }, { status: 500 })
+    const classData = await db.class.update({
+      where: { id },
+      data: { isActive: false },
+    })
+
+    return NextResponse.json({ data: classData })
+  } catch (error) {
+    if (error instanceof AuthError) {
+      return NextResponse.json({ error: error.message }, { status: error.status })
+    }
+    console.error('Error deleting class:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

@@ -1,58 +1,63 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { requireRole, AuthError } from '@/lib/get-user'
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
-    const search = searchParams.get('search')
     const type = searchParams.get('type')
-    const page = parseInt(searchParams.get('page') || '1')
-    const pageSize = parseInt(searchParams.get('pageSize') || '20')
 
-    const where: Record<string, unknown> = {}
-    if (search) {
-      where.OR = [
-        { name: { contains: search } },
-        { code: { contains: search } },
-      ]
-    }
-    if (type) where.type = type
-
-    const [rooms, total] = await Promise.all([
-      db.room.findMany({
-        where,
-        skip: (page - 1) * pageSize,
-        take: pageSize,
-        orderBy: { name: 'asc' },
-      }),
-      db.room.count({ where }),
-    ])
-
-    const totalPages = Math.ceil(total / pageSize)
-
-    return NextResponse.json({
-      success: true,
-      data: rooms,
-      pagination: { page, pageSize, total, totalPages, hasNextPage: page < totalPages, hasPreviousPage: page > 1 },
+    const rooms = await db.room.findMany({
+      where: {
+        ...(type && { type }),
+        isActive: true,
+      },
+      include: {
+        _count: {
+          select: { lessons: true },
+        },
+      },
+      orderBy: [{ code: 'asc' }],
     })
-  } catch (error: unknown) {
-    const msg = error instanceof Error ? error.message : 'Failed to fetch rooms'
-    return NextResponse.json({ success: false, error: msg }, { status: 500 })
+
+    return NextResponse.json({ data: rooms })
+  } catch (error) {
+    console.error('Error fetching rooms:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
+    const user = await requireRole(request, ['ADMIN', 'COORDINATOR'])
+
     const body = await request.json()
-    const { code, name } = body
-    if (!code || !name) {
-      return NextResponse.json({ success: false, error: 'Code and name are required' }, { status: 400 })
+    const { name, code, capacity, type } = body
+
+    if (!name || !code || !capacity) {
+      return NextResponse.json({ error: 'Name, code, and capacity are required' }, { status: 400 })
     }
 
-    const room = await db.room.create({ data: body })
-    return NextResponse.json({ success: true, data: room }, { status: 201 })
-  } catch (error: unknown) {
-    const msg = error instanceof Error ? error.message : 'Failed to create room'
-    return NextResponse.json({ success: false, error: msg }, { status: 500 })
+    const existing = await db.room.findUnique({ where: { code } })
+    if (existing) {
+      return NextResponse.json({ error: 'Room code already exists' }, { status: 409 })
+    }
+
+    const room = await db.room.create({
+      data: {
+        name,
+        code: code.toUpperCase(),
+        capacity,
+        type: type || 'classroom',
+      },
+    })
+
+    return NextResponse.json({ data: room }, { status: 201 })
+  } catch (error) {
+    if (error instanceof AuthError) {
+      return NextResponse.json({ error: error.message }, { status: error.status })
+    }
+    console.error('Error creating room:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

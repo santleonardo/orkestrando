@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { requireAuth, AuthError } from '@/lib/get-user'
+import { requireRole, AuthError } from '@/lib/get-user'
 
 export async function GET(
   request: NextRequest,
@@ -8,27 +8,26 @@ export async function GET(
 ) {
   try {
     const { id } = await params
-    const enrollment = await db.enrollment.findUnique({
+    const discipline = await db.discipline.findUnique({
       where: { id },
       include: {
-        student: true,
-        class: {
+        course: true,
+        classes: {
           include: {
-            discipline: true,
             semester: true,
-            teacher: { select: { id: true, name: true } },
+            teacher: { select: { id: true, name: true, email: true } },
           },
         },
       },
     })
 
-    if (!enrollment) {
-      return NextResponse.json({ error: 'Enrollment not found' }, { status: 404 })
+    if (!discipline) {
+      return NextResponse.json({ error: 'Discipline not found' }, { status: 404 })
     }
 
-    return NextResponse.json({ data: enrollment })
+    return NextResponse.json({ data: discipline })
   } catch (error) {
-    console.error('Error fetching enrollment:', error)
+    console.error('Error fetching discipline:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
@@ -38,25 +37,28 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const user = await requireAuth(request)
+    const user = await requireRole(request, ['ADMIN', 'COORDINATOR'])
 
     const { id } = await params
     const body = await request.json()
 
-    const enrollment = await db.enrollment.update({
+    const discipline = await db.discipline.update({
       where: { id },
       data: {
-        ...(body.grade !== undefined && { grade: body.grade }),
-        ...(body.status && { status: body.status }),
+        ...(body.name && { name: body.name }),
+        ...(body.code && { code: body.code.toUpperCase() }),
+        ...(body.description !== undefined && { description: body.description }),
+        ...(body.workload !== undefined && { workload: body.workload }),
+        ...(body.isActive !== undefined && { isActive: body.isActive }),
       },
     })
 
-    return NextResponse.json({ data: enrollment })
+    return NextResponse.json({ data: discipline })
   } catch (error) {
     if (error instanceof AuthError) {
       return NextResponse.json({ error: error.message }, { status: error.status })
     }
-    console.error('Error updating enrollment:', error)
+    console.error('Error updating discipline:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
@@ -66,17 +68,20 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const user = await requireAuth(request)
+    const user = await requireRole(request, ['ADMIN', 'COORDINATOR'])
 
     const { id } = await params
-    await db.enrollment.delete({ where: { id } })
+    const discipline = await db.discipline.update({
+      where: { id },
+      data: { isActive: false },
+    })
 
-    return NextResponse.json({ data: { success: true } })
+    return NextResponse.json({ data: discipline })
   } catch (error) {
     if (error instanceof AuthError) {
       return NextResponse.json({ error: error.message }, { status: error.status })
     }
-    console.error('Error deleting enrollment:', error)
+    console.error('Error deleting discipline:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

@@ -8,27 +8,22 @@ export async function GET(
 ) {
   try {
     const { id } = await params
-    const enrollment = await db.enrollment.findUnique({
+    const availability = await db.teacherAvailability.findUnique({
       where: { id },
       include: {
-        student: true,
-        class: {
-          include: {
-            discipline: true,
-            semester: true,
-            teacher: { select: { id: true, name: true } },
-          },
-        },
+        teacher: true,
+        semester: true,
+        approver: { select: { id: true, name: true } },
       },
     })
 
-    if (!enrollment) {
-      return NextResponse.json({ error: 'Enrollment not found' }, { status: 404 })
+    if (!availability) {
+      return NextResponse.json({ error: 'Availability not found' }, { status: 404 })
     }
 
-    return NextResponse.json({ data: enrollment })
+    return NextResponse.json({ data: availability })
   } catch (error) {
-    console.error('Error fetching enrollment:', error)
+    console.error('Error fetching availability:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
@@ -43,20 +38,25 @@ export async function PUT(
     const { id } = await params
     const body = await request.json()
 
-    const enrollment = await db.enrollment.update({
+    const availability = await db.teacherAvailability.update({
       where: { id },
       data: {
-        ...(body.grade !== undefined && { grade: body.grade }),
-        ...(body.status && { status: body.status }),
+        ...(body.dayOfWeek !== undefined && { dayOfWeek: Number(body.dayOfWeek) }),
+        ...(body.startTime && { startTime: body.startTime }),
+        ...(body.endTime && { endTime: body.endTime }),
+        ...(body.type && { type: body.type }),
+        ...(body.reason !== undefined && { reason: body.reason }),
+        ...(body.effectiveFrom && { effectiveFrom: new Date(body.effectiveFrom) }),
+        ...(body.effectiveTo !== undefined && { effectiveTo: body.effectiveTo ? new Date(body.effectiveTo) : null }),
       },
     })
 
-    return NextResponse.json({ data: enrollment })
+    return NextResponse.json({ data: availability })
   } catch (error) {
     if (error instanceof AuthError) {
       return NextResponse.json({ error: error.message }, { status: error.status })
     }
-    console.error('Error updating enrollment:', error)
+    console.error('Error updating availability:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
@@ -69,14 +69,14 @@ export async function DELETE(
     const user = await requireAuth(request)
 
     const { id } = await params
-    await db.enrollment.delete({ where: { id } })
+    await db.teacherAvailability.delete({ where: { id } })
 
     return NextResponse.json({ data: { success: true } })
   } catch (error) {
     if (error instanceof AuthError) {
       return NextResponse.json({ error: error.message }, { status: error.status })
     }
-    console.error('Error deleting enrollment:', error)
+    console.error('Error deleting availability:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

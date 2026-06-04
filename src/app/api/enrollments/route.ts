@@ -1,59 +1,85 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { requireAuth, AuthError } from '@/lib/get-user'
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
-    const classId = searchParams.get('classId')
     const studentId = searchParams.get('studentId')
+    const classId = searchParams.get('classId')
     const status = searchParams.get('status')
-    const page = parseInt(searchParams.get('page') || '1')
-    const pageSize = parseInt(searchParams.get('pageSize') || '20')
 
-    const where: Record<string, unknown> = {}
-    if (classId) where.classId = classId
-    if (studentId) where.studentId = studentId
-    if (status) where.status = status
-
-    const [enrollments, total] = await Promise.all([
-      db.enrollment.findMany({
-        where,
-        include: {
-          class: { include: { subject: true } },
-          student: { select: { id: true, firstName: true, lastName: true, displayName: true } },
+    const enrollments = await db.enrollment.findMany({
+      where: {
+        ...(studentId && { studentId }),
+        ...(classId && { classId }),
+        ...(status && { status }),
+      },
+      include: {
+        student: { select: { id: true, name: true, email: true, avatar: true } },
+        class: {
+          include: {
+            discipline: { select: { id: true, name: true, code: true } },
+            semester: { select: { id: true, name: true, code: true } },
+            teacher: { select: { id: true, name: true } },
+          },
         },
-        skip: (page - 1) * pageSize,
-        take: pageSize,
-        orderBy: { createdAt: 'desc' },
-      }),
-      db.enrollment.count({ where }),
-    ])
-
-    const totalPages = Math.ceil(total / pageSize)
-
-    return NextResponse.json({
-      success: true,
-      data: enrollments,
-      pagination: { page, pageSize, total, totalPages, hasNextPage: page < totalPages, hasPreviousPage: page > 1 },
+      },
+      orderBy: { enrolledAt: 'desc' },
     })
-  } catch (error: unknown) {
-    const msg = error instanceof Error ? error.message : 'Failed to fetch enrollments'
-    return NextResponse.json({ success: false, error: msg }, { status: 500 })
+
+    return NextResponse.json({ data: enrollments })
+  } catch (error) {
+    console.error('Error fetching enrollments:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
+    const user = await requireAuth(request)
+
     const body = await request.json()
-    const { classId, studentId } = body
-    if (!classId || !studentId) {
-      return NextResponse.json({ success: false, error: 'Class and student are required' }, { status: 400 })
+    const { studentId, classId } = body
+
+    if (!studentId || !classId) {
+      return NextResponse.json({ error: 'studentId and classId are required' }, { status: 400 })
     }
 
-    const enrollment = await db.enrollment.create({ data: body })
-    return NextResponse.json({ success: true, data: enrollment }, { status: 201 })
-  } catch (error: unknown) {
-    const msg = error instanceof Error ? error.message : 'Failed to create enrollment'
-    return NextResponse.json({ success: false, error: msg }, { status: 500 })
+    // Check if class exists and is active
+    const classData = await db.class.findUnique({
+      where: { id: classId },
+    })
+    if (!classData || !classData.isActive) {
+      return NextResponse.json({ error: 'Class not found or inactive' }, { status: 404 })
+    }
+
+    // Check capacity
+    const currentEnrollments = await db.enrollment.count({
+      where: { classId, status: 'active' },
+    })
+    if (currentEnrollments >= classData.maxStudents) {
+      return NextResponse.json({ error: 'Class is full' }, { status: 400 })
+    }
+
+    // Check for existing enrollment
+    const existing = await db.enrollment.findUnique({
+      where: { studentId_classId: { studentId, classId } },
+    })
+    if (existing) {
+      return NextResponse.json({ error: 'Already enrolled in this class' }, { status: 409 })
+    }
+
+    const enrollment = await db.enrollment.create({
+      data: { studentId, classId },
+    })
+
+    return NextResponse.json({ data: enrollment }, { status: 201 })
+  } catch (error) {
+    if (error instanceof AuthError) {
+      return NextResponse.json({ error: error.message }, { status: error.status })
+    }
+    console.error('Error creating enrollment:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

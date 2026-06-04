@@ -8,20 +8,35 @@ export async function GET(
 ) {
   try {
     const { id } = await params
-    const room = await db.room.findUnique({
+    const semester = await db.semester.findUnique({
       where: { id },
       include: {
-        _count: { select: { lessons: true } },
+        classes: {
+          include: {
+            discipline: { select: { id: true, name: true, code: true } },
+            teacher: { select: { id: true, name: true, email: true } },
+            _count: { select: { enrollments: true, lessons: true } },
+          },
+        },
+        academicCalendars: {
+          orderBy: { date: 'asc' },
+        },
+        _count: {
+          select: {
+            classes: true,
+            availabilities: true,
+          },
+        },
       },
     })
 
-    if (!room) {
-      return NextResponse.json({ error: 'Room not found' }, { status: 404 })
+    if (!semester) {
+      return NextResponse.json({ error: 'Semester not found' }, { status: 404 })
     }
 
-    return NextResponse.json({ data: room })
+    return NextResponse.json({ data: semester })
   } catch (error) {
-    console.error('Error fetching room:', error)
+    console.error('Error fetching semester:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
@@ -36,23 +51,31 @@ export async function PUT(
     const { id } = await params
     const body = await request.json()
 
-    const room = await db.room.update({
+    // If setting active, deactivate other semesters first
+    if (body.isActive === true) {
+      await db.semester.updateMany({
+        where: { isActive: true, id: { not: id } },
+        data: { isActive: false },
+      })
+    }
+
+    const semester = await db.semester.update({
       where: { id },
       data: {
         ...(body.name && { name: body.name }),
-        ...(body.code && { code: body.code.toUpperCase() }),
-        ...(body.capacity !== undefined && { capacity: body.capacity }),
-        ...(body.type && { type: body.type }),
+        ...(body.code && { code: body.code }),
+        ...(body.startDate && { startDate: new Date(body.startDate) }),
+        ...(body.endDate && { endDate: new Date(body.endDate) }),
         ...(body.isActive !== undefined && { isActive: body.isActive }),
       },
     })
 
-    return NextResponse.json({ data: room })
+    return NextResponse.json({ data: semester })
   } catch (error) {
     if (error instanceof AuthError) {
       return NextResponse.json({ error: error.message }, { status: error.status })
     }
-    console.error('Error updating room:', error)
+    console.error('Error updating semester:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
@@ -65,17 +88,14 @@ export async function DELETE(
     const user = await requireRole(request, ['ADMIN'])
 
     const { id } = await params
-    const room = await db.room.update({
-      where: { id },
-      data: { isActive: false },
-    })
+    await db.semester.delete({ where: { id } })
 
-    return NextResponse.json({ data: room })
+    return NextResponse.json({ data: { success: true } })
   } catch (error) {
     if (error instanceof AuthError) {
       return NextResponse.json({ error: error.message }, { status: error.status })
     }
-    console.error('Error deleting room:', error)
+    console.error('Error deleting semester:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

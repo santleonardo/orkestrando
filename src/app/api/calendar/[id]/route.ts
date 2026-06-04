@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { requireAuth, AuthError } from '@/lib/get-user'
+import { requireRole, AuthError } from '@/lib/get-user'
 
 export async function GET(
   request: NextRequest,
@@ -8,27 +8,18 @@ export async function GET(
 ) {
   try {
     const { id } = await params
-    const enrollment = await db.enrollment.findUnique({
+    const event = await db.academicCalendar.findUnique({
       where: { id },
-      include: {
-        student: true,
-        class: {
-          include: {
-            discipline: true,
-            semester: true,
-            teacher: { select: { id: true, name: true } },
-          },
-        },
-      },
+      include: { semester: true },
     })
 
-    if (!enrollment) {
-      return NextResponse.json({ error: 'Enrollment not found' }, { status: 404 })
+    if (!event) {
+      return NextResponse.json({ error: 'Calendar event not found' }, { status: 404 })
     }
 
-    return NextResponse.json({ data: enrollment })
+    return NextResponse.json({ data: event })
   } catch (error) {
-    console.error('Error fetching enrollment:', error)
+    console.error('Error fetching calendar event:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
@@ -38,25 +29,30 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const user = await requireAuth(request)
+    const user = await requireRole(request, ['ADMIN', 'COORDINATOR'])
 
     const { id } = await params
     const body = await request.json()
 
-    const enrollment = await db.enrollment.update({
+    const event = await db.academicCalendar.update({
       where: { id },
       data: {
-        ...(body.grade !== undefined && { grade: body.grade }),
-        ...(body.status && { status: body.status }),
+        ...(body.title && { title: body.title }),
+        ...(body.description !== undefined && { description: body.description }),
+        ...(body.date && { date: new Date(body.date) }),
+        ...(body.type && { type: body.type }),
+        ...(body.semesterId !== undefined && { semesterId: body.semesterId }),
+        ...(body.isRecurring !== undefined && { isRecurring: body.isRecurring }),
+        ...(body.recurrencePattern !== undefined && { recurrencePattern: body.recurrencePattern }),
       },
     })
 
-    return NextResponse.json({ data: enrollment })
+    return NextResponse.json({ data: event })
   } catch (error) {
     if (error instanceof AuthError) {
       return NextResponse.json({ error: error.message }, { status: error.status })
     }
-    console.error('Error updating enrollment:', error)
+    console.error('Error updating calendar event:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
@@ -66,17 +62,17 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const user = await requireAuth(request)
+    const user = await requireRole(request, ['ADMIN', 'COORDINATOR'])
 
     const { id } = await params
-    await db.enrollment.delete({ where: { id } })
+    await db.academicCalendar.delete({ where: { id } })
 
     return NextResponse.json({ data: { success: true } })
   } catch (error) {
     if (error instanceof AuthError) {
       return NextResponse.json({ error: error.message }, { status: error.status })
     }
-    console.error('Error deleting enrollment:', error)
+    console.error('Error deleting calendar event:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

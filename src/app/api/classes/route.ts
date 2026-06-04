@@ -1,68 +1,89 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { requireRole, AuthError } from '@/lib/get-user'
+import { generateLessons } from '@/lib/class-generator'
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
-    const subjectId = searchParams.get('subjectId')
+    const semesterId = searchParams.get('semesterId')
     const teacherId = searchParams.get('teacherId')
-    const roomId = searchParams.get('roomId')
-    const weekday = searchParams.get('weekday')
-    const search = searchParams.get('search')
-    const page = parseInt(searchParams.get('page') || '1')
-    const pageSize = parseInt(searchParams.get('pageSize') || '20')
+    const disciplineId = searchParams.get('disciplineId')
 
-    const where: Record<string, unknown> = {}
-    if (subjectId) where.subjectId = subjectId
-    if (teacherId) where.teacherId = teacherId
-    if (roomId) where.roomId = roomId
-    if (weekday) where.weekday = weekday
-    if (search) where.code = { contains: search }
-
-    const [classes, total] = await Promise.all([
-      db.class.findMany({
-        where,
-        include: {
-          subject: true,
-          teacher: { select: { id: true, firstName: true, lastName: true, displayName: true, email: true } },
-          room: true,
+    const classes = await db.class.findMany({
+      where: {
+        ...(semesterId && { semesterId }),
+        ...(teacherId && { teacherId }),
+        ...(disciplineId && { disciplineId }),
+        isActive: true,
+      },
+      include: {
+        discipline: {
+          include: { course: { select: { id: true, name: true, code: true } } },
         },
-        skip: (page - 1) * pageSize,
-        take: pageSize,
-        orderBy: { code: 'asc' },
-      }),
-      db.class.count({ where }),
-    ])
-
-    const totalPages = Math.ceil(total / pageSize)
-
-    return NextResponse.json({
-      success: true,
-      data: classes,
-      pagination: { page, pageSize, total, totalPages, hasNextPage: page < totalPages, hasPreviousPage: page > 1 },
+        semester: { select: { id: true, name: true, code: true } },
+        teacher: { select: { id: true, name: true, email: true } },
+        _count: { select: { enrollments: true, lessons: true, materials: true } },
+      },
+      orderBy: [{ code: 'asc' }],
     })
-  } catch (error: unknown) {
-    const msg = error instanceof Error ? error.message : 'Failed to fetch classes'
-    return NextResponse.json({ success: false, error: msg }, { status: 500 })
+
+    return NextResponse.json({ data: classes })
+  } catch (error) {
+    console.error('Error fetching classes:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
+    const user = await requireRole(request, ['ADMIN', 'COORDINATOR'])
+
     const body = await request.json()
-    const { code, subjectId, teacherId, roomId, weekday, startTime, endTime } = body
-    if (!code || !subjectId || !teacherId || !roomId || !weekday || !startTime || !endTime) {
-      return NextResponse.json({ success: false, error: 'Required fields missing' }, { status: 400 })
+    const { name, code, disciplineId, semesterId, teacherId, schedule, room, maxStudents } = body
+
+    if (!name || !code || !disciplineId || !semesterId || !teacherId || !schedule) {
+      return NextResponse.json(
+        { error: 'Name, code, disciplineId, semesterId, teacherId, and schedule are required' },
+        { status: 400 }
+      )
     }
 
-    const cls = await db.class.create({ data: body })
-    const result = await db.class.findUnique({
-      where: { id: cls.id },
-      include: { subject: true, teacher: { select: { id: true, firstName: true, lastName: true, displayName: true } }, room: true },
+    const existing = await db.class.findUnique({ where: { code } })
+    if (existing) {
+      return NextResponse.json({ error: 'Class code already exists' }, { status: 409 })
+    }
+
+    const newClass = await db.class.create({
+      data: {
+        name,
+        code,
+        disciplineId,
+        semesterId,
+        teacherId,
+        schedule: JSON.stringify(schedule),
+        room,
+        maxStudents: maxStudents || 40,
+      },
     })
-    return NextResponse.json({ success: true, data: result }, { status: 201 })
-  } catch (error: unknown) {
-    const msg = error instanceof Error ? error.message : 'Failed to create class'
-    return NextResponse.json({ success: false, error: msg }, { status: 500 })
+
+    // Generate lessons for the class
+    let lessonsCount = 0
+    try {
+      lessonsCount = await generateLessons(newClass.id)
+    } catch (lessonError) {
+      console.error('Error generating lessons:', lessonError)
+    }
+
+    return NextResponse.json(
+      { data: newClass, meta: { lessonsGenerated: lessonsCount } },
+      { status: 201 }
+    )
+  } catch (error) {
+    if (error instanceof AuthError) {
+      return NextResponse.json({ error: error.message }, { status: error.status })
+    }
+    console.error('Error creating class:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
