@@ -87,13 +87,16 @@ const headers = (token: string | null) => ({
   ...(token ? { Authorization: `Bearer ${token}` } : {}),
 })
 
-// Unwrap API response - handles both raw arrays and { success, data } envelopes
-async function unwrap(res: Response) {
+// Unwrap API response - handles both raw arrays and { success, data } envelopes.
+// Always returns an array; returns [] on non-ok responses or unexpected shapes.
+async function unwrap(res: Response): Promise<any[]> {
+  if (!res.ok) return []
   const json = await res.json()
+  if (Array.isArray(json)) return json
   if (json && typeof json === 'object' && 'data' in json && Array.isArray(json.data)) {
     return json.data
   }
-  return json
+  return []
 }
 
 export const useStore = create<AppState>((set, get) => ({
@@ -179,12 +182,19 @@ export const useStore = create<AppState>((set, get) => ({
   fetchProfiles: async () => {
     const { token } = get()
     try {
-      const res = await fetch(`/api/profiles?role=COORDINATOR`, { headers: headers(token) })
-      const coordinators = await res.json()
-      const res2 = await fetch(`/api/profiles?role=PROFESSOR`, { headers: headers(token) })
-      const professors = await res2.json()
-      const res3 = await fetch(`/api/profiles?role=STUDENT`, { headers: headers(token) })
-      const students = await res3.json()
+      const [r1, r2, r3] = await Promise.all([
+        fetch('/api/profiles?role=COORDINATOR', { headers: headers(token) }),
+        fetch('/api/profiles?role=PROFESSOR', { headers: headers(token) }),
+        fetch('/api/profiles?role=STUDENT', { headers: headers(token) }),
+      ])
+      const safeJson = async (r: Response): Promise<any[]> => {
+        if (!r.ok) return []
+        const j = await r.json()
+        return Array.isArray(j) ? j : []
+      }
+      const [coordinators, professors, students] = await Promise.all([
+        safeJson(r1), safeJson(r2), safeJson(r3),
+      ])
       set({ profiles: [...coordinators, ...professors, ...students] })
     } catch (e) { console.error(e) }
   },
