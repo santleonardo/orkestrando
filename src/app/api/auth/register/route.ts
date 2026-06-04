@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabase'
+import { supabase, supabaseAdmin } from '@/lib/supabase'
 import { db } from '@/lib/db'
 
 const DEFAULT_ORG_ID = 'org-001'
@@ -12,25 +12,25 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Required fields missing' }, { status: 400 })
     }
 
-    // Create user in Supabase Auth
-    const { data, error } = await supabaseAdmin.auth.admin.createUser({
+    // Create user in Supabase Auth via admin client (auto-confirms email)
+    const { data: adminData, error: adminError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
       email_confirm: true,
     })
 
-    if (error || !data.user) {
-      if (error?.message?.includes('already registered')) {
+    if (adminError || !adminData.user) {
+      if (adminError?.message?.includes('already registered') || adminError?.message?.includes('already been registered')) {
         return NextResponse.json({ error: 'Email already registered' }, { status: 409 })
       }
-      console.error('Supabase Auth error:', error)
+      console.error('Supabase admin createUser error:', adminError?.message)
       return NextResponse.json({ error: 'Failed to create account' }, { status: 500 })
     }
 
-    // Create profile in our profiles table
+    // Create profile row in our profiles table
     const profile = await db.profile.create({
       data: {
-        user_id: data.user.id,
+        user_id: adminData.user.id,
         org_id: DEFAULT_ORG_ID,
         email,
         first_name: firstName,
@@ -40,13 +40,11 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    // Sign in to get the session token
-    const { data: sessionData, error: sessionError } = await supabaseAdmin.auth.signInWithPassword({
-      email,
-      password,
-    })
+    // Sign in with anon client to get session token
+    const { data: sessionData, error: sessionError } = await supabase.auth.signInWithPassword({ email, password })
 
     if (sessionError || !sessionData.session) {
+      // Account created, but couldn't get token — return profile id as fallback
       return NextResponse.json({ token: profile.id, user: profile }, { status: 201 })
     }
 
