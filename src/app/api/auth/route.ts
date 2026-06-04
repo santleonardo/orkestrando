@@ -3,36 +3,47 @@ import { supabase } from '@/lib/supabase'
 import { db } from '@/lib/db'
 
 export async function POST(request: NextRequest) {
+  // Step 1: parse body
+  let email: string, password: string
   try {
-    const { email, password } = await request.json()
+    const body = await request.json()
+    email = body.email
+    password = body.password
+  } catch {
+    return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
+  }
 
-    if (!email || !password) {
-      return NextResponse.json({ error: 'Email and password are required' }, { status: 400 })
-    }
+  if (!email || !password) {
+    return NextResponse.json({ error: 'Email and password are required' }, { status: 400 })
+  }
 
-    // Use the anon client to sign in — this is the correct client for signInWithPassword
+  // Step 2: authenticate via Supabase Auth
+  let userId: string
+  let accessToken: string
+  try {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
-
     if (error || !data.user || !data.session) {
-      console.error('Supabase auth error:', error?.message)
-      return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 })
+      return NextResponse.json({ error: error?.message || 'Invalid credentials' }, { status: 401 })
     }
+    userId = data.user.id
+    accessToken = data.session.access_token
+  } catch (err: any) {
+    console.error('[auth] Supabase signIn threw:', err?.message)
+    return NextResponse.json({ error: 'Auth service error: ' + (err?.message || 'unknown') }, { status: 500 })
+  }
 
-    // Fetch the profile from our profiles table using Prisma
-    const profile = await db.profile.findUnique({
-      where: { user_id: data.user.id },
-    })
-
+  // Step 3: fetch profile from database
+  try {
+    const profile = await db.profile.findUnique({ where: { user_id: userId } })
     if (!profile) {
       return NextResponse.json({ error: 'Profile not found. Contact your administrator.' }, { status: 404 })
     }
-
+    return NextResponse.json({ token: accessToken, user: profile })
+  } catch (err: any) {
+    console.error('[auth] Prisma error:', err?.message, err?.code)
     return NextResponse.json({
-      token: data.session.access_token,
-      user: profile,
-    })
-  } catch (error) {
-    console.error('Login error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+      error: 'Database error: ' + (err?.message || 'unknown'),
+      code: err?.code,
+    }, { status: 500 })
   }
 }
