@@ -1,10 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { Toaster } from "@/components/ui/sonner";
-import { SessionProvider } from "@/providers/SessionProvider";
-import { AuthProvider } from "@/providers/AuthProvider";
-import { RoleProvider } from "@/providers/RoleProvider";
+import { Toaster } from "@/components/ui/toaster";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -19,21 +16,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Orkestrando — Plataforma Educacional",
   description:
-    "Plataforma educacional completa com gestão de turmas, atividades, materiais e comunicação entre coordenadores, professores e alunos.",
-  keywords: [
-    "Orkestrando",
-    "educação",
-    "plataforma educacional",
-    "gestão escolar",
-    "Next.js",
-    "TypeScript",
-  ],
+    "Plataforma educacional completa com gestão de turmas, atividades, materiais e comunicação.",
+  keywords: ["Orkestrando", "educação", "plataforma educacional", "gestão escolar"],
   authors: [{ name: "Orkestrando" }],
-  openGraph: {
-    title: "Orkestrando — Plataforma Educacional",
-    description: "Gestão educacional inteligente para coordenadores, professores e alunos.",
-    type: "website",
-  },
 };
 
 export default function RootLayout({
@@ -46,15 +31,9 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}
       >
-        <SessionProvider>
-          <AuthProvider>
-            <RoleProvider>
-              <div className="min-h-screen flex flex-col">
-                {children}
-              </div>
-            </RoleProvider>
-          </AuthProvider>
-        </SessionProvider>
+        <div className="min-h-screen flex flex-col">
+          {children}
+        </div>
         <Toaster />
       </body>
     </html>
