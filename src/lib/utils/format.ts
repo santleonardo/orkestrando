@@ -158,3 +158,28 @@ export function formatRole(role: string): string {
   }
   return roles[role] || role
 }
+
+/**
+ * Formats a date as a relative time string in Brazilian Portuguese
+ * Example: "há 5 minutos", "há 2 horas", "há 3 dias"
+ */
+export function formatRelativeTime(date: Date | string): string {
+  const now = new Date()
+  const target = typeof date === 'string' ? new Date(date) : date
+  const diffMs = now.getTime() - target.getTime()
+  const diffSeconds = Math.floor(diffMs / 1000)
+  const diffMinutes = Math.floor(diffSeconds / 60)
+  const diffHours = Math.floor(diffMinutes / 60)
+  const diffDays = Math.floor(diffHours / 24)
+  const diffWeeks = Math.floor(diffDays / 7)
+  const diffMonths = Math.floor(diffDays / 30)
+  const diffYears = Math.floor(diffDays / 365)
+
+  if (diffSeconds < 60) return 'agora mesmo'
+  if (diffMinutes < 60) return `há ${diffMinutes} ${diffMinutes === 1 ? 'minuto' : 'minutos'}`
+  if (diffHours < 24) return `há ${diffHours} ${diffHours === 1 ? 'hora' : 'horas'}`
+  if (diffDays < 7) return `há ${diffDays} ${diffDays === 1 ? 'dia' : 'dias'}`
+  if (diffWeeks < 4) return `há ${diffWeeks} ${diffWeeks === 1 ? 'semana' : 'semanas'}`
+  if (diffMonths < 12) return `há ${diffMonths} ${diffMonths === 1 ? 'mês' : 'meses'}`
+  return `há ${diffYears} ${diffYears === 1 ? 'ano' : 'anos'}`
+}
