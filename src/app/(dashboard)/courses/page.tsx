@@ -37,7 +37,7 @@ export default function CoursesPage() {
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null)
   const [formData, setFormData] = useState({
     name: '', code: '', description: '', durationHours: '120', totalCredits: '80',
-    level: 'mixed' as const, modality: 'in_person' as const, tuitionFee: '', maxCapacity: '30',
+    level: 'mixed' as Course['level'], modality: 'in_person' as Course['modality'], tuitionFee: '', maxCapacity: '30',
   })
 
   const columns: ColumnDef<Course>[] = [
@@ -103,7 +103,7 @@ export default function CoursesPage() {
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
       <PageHeader title="Cursos" description="Gerencie os cursos da instituição" breadcrumbs={[{ label: 'Dashboard', href: '/' }, { label: 'Cursos' }]}
-        actions={<Button onClick={() => { setSelectedCourse(null); setFormData({ name: '', code: '', description: '', durationHours: '120', totalCredits: '80', level: 'mixed', modality: 'in_person', tuitionFee: '', maxCapacity: '30' }); setDialogOpen(true) }}><Plus className="mr-2 h-4 w-4" /> Novo Curso</Button>}
+        actions={<Button onClick={() => { setSelectedCourse(null); setFormData({ name: '', code: '', description: '', durationHours: '120', totalCredits: '80', level: 'mixed' as Course['level'], modality: 'in_person' as Course['modality'], tuitionFee: '', maxCapacity: '30' }); setDialogOpen(true) }}><Plus className="mr-2 h-4 w-4" /> Novo Curso</Button>}
       />
       <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
         <StatsCard title="Total Cursos" value={courses.length} icon={BookOpen} iconColor="text-purple-600 bg-purple-50 dark:bg-purple-950/50" />
