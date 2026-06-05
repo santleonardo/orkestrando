@@ -20,7 +20,7 @@ import { toast } from 'sonner'
 import { motion } from 'framer-motion'
 
 export default function SettingsPage() {
-  const { profile, role } = useAuth()
+  const { profile, role, user } = useAuth()
   const [activeTab, setActiveTab] = useState('organization')
 
   const [orgForm, setOrgForm] = useState({
@@ -137,7 +137,7 @@ export default function SettingsPage() {
                     </Avatar>
                     <div>
                       <p className="text-sm font-medium">{profile?.fullName || 'Administrador'}</p>
-                      <p className="text-xs text-muted-foreground">{profile?.email || 'admin@orkestrando.edu.br'}</p>
+                      <p className="text-xs text-muted-foreground">{user?.email || 'admin@orkestrando.edu.br'}</p>
                     </div>
                   </div>
                   <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300 text-xs">Coordenador</Badge>
