@@ -54,8 +54,27 @@ const ROOMS = [
   { id: '4', name: 'Lab Música', code: 'LM' },
 ]
 
+type Session = {
+  id: string
+  classId: string
+  courseName: string
+  courseColor: string
+  courseLightColor: string
+  className: string
+  teacherName: string
+  teacherId: string
+  roomId: string
+  roomName: string
+  date: string
+  startTime: string
+  endTime: string
+  status: string
+  topic: string
+  studentCount: number
+}
+
 function generateSessions() {
-  const sessions = []
+  const sessions: Session[] = []
   const base = new Date()
   for (let d = -2; d < 7; d++) {
     const date = addDays(base, d)
