@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Clock, Plus, Check, X, AlertCircle, Calendar, Block } from 'lucide-react'
+import { Clock, Plus, Check, X, AlertCircle, Calendar, Ban } from 'lucide-react'
 import { WEEKDAYS_SHORT, AVAILABILITY_STATUS_LABELS } from '@/lib/constants'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
@@ -193,7 +193,7 @@ export default function AvailabilityPage() {
         </CardContent>
       </Card>
 
-      {/* Block Periods */}
+      {/* Ban Periods */}
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base">Períodos Bloqueados</CardTitle>
