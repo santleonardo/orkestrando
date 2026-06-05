@@ -1,0 +1,79 @@
+# ORKESTRANDO - Supabase Configuration
+# https://supabase.com/docs/guides/cli/config
+
+[project]
+id = "orkestrando"
+name = "ORKESTRANDO"
+region = "sa-east-1"
+version = "1.0.0"
+
+[db]
+# Port for the local Supabase database
+port = 54322
+
+[db.seed]
+# Seed file for local development
+sql_paths = ["./seed.sql"]
+
+[studio]
+port = 54323
+
+[auth]
+site_url = "http://localhost:3000"
+additional_redirect_urls = ["https://orkestrando.vercel.app"]
+jwt_expiry = 3600
+enable_signup = true
+
+[auth.email]
+enable_confirmations = true
+double_confirm_changes = true
+enable_signup = true
+
+[api]
+port = 54321
+schemas = ["public", "auth"]
+extra_search_path = "public"
+
+[storage]
+file_size_limit = "52428800" # 50MB
+
+[storage.buckets.avatars]
+public = false
+file_size_limit = "2097152" # 2MB
+allowed_mime_types = ["image/png", "image/jpeg", "image/gif", "image/webp"]
+
+[storage.buckets.materials]
+public = false
+file_size_limit = "52428800" # 50MB
+allowed_mime_types = [
+  "application/pdf",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  "audio/mpeg",
+  "audio/mp4",
+  "video/mp4",
+  "image/png",
+  "image/jpeg",
+  "application/zip",
+  "application/x-zip-compressed"
+]
+
+[storage.buckets.assignments]
+public = false
+file_size_limit = "52428800"
+
+[storage.buckets.reports]
+public = false
+file_size_limit = "10485760" # 10MB
+
+[storage.buckets.messages]
+public = false
+file_size_limit = "10485760" # 10MB
+
+[storage.buckets.signatures]
+public = false
+file_size_limit = "1048576" # 1MB
+
+[functions.notify]
+verify_jwt = true
