@@ -35,7 +35,7 @@ interface HeaderProps {
 
 export function Header({ onMenuToggle }: HeaderProps) {
   const router = useRouter()
-  const { profile, role, signOut } = useAuth()
+  const { profile, role, user, signOut } = useAuth()
   const permissions = usePermissions(role)
   const { theme, setTheme } = useTheme()
 
@@ -111,7 +111,7 @@ export function Header({ onMenuToggle }: HeaderProps) {
                   {profile?.fullName || 'Usuário'}
                 </p>
                 <p className="text-xs leading-none text-muted-foreground">
-                  {profile?.email || ''}
+                  {user?.email || ''}
                 </p>
                 {role && (
                   <Badge variant="secondary" className="mt-1 w-fit text-[10px]">
