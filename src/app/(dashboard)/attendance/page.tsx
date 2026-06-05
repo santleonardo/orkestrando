@@ -143,7 +143,7 @@ export default function AttendancePage() {
     if (!bulkAction) return
     const newAttendance = { ...studentAttendance }
     MOCK_STUDENTS.forEach(s => {
-      newAttendance[s] = { ...newAttendance[s], [selectedSession]: bulkAction }
+      newAttendance[s.id] = { ...newAttendance[s.id], [selectedSession]: bulkAction }
     })
     setStudentAttendance(newAttendance)
     toast.success(`Todos os alunos marcados como ${ATTENDANCE_STATUS_LABELS[bulkAction]}`)
