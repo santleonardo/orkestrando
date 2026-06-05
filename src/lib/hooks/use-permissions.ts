@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import type { UserRole } from '@/lib/types'
 
-interface PermissionHook {
+export interface PermissionHook {
   can: (action: string, resource?: string) => boolean
   cannot: (action: string, resource?: string) => boolean
   isCoordinator: boolean
