@@ -95,7 +95,7 @@ export default function SemestersPage() {
                           <p className="text-xs text-muted-foreground">Semana Atual</p>
                           <p className="font-medium">{semester.currentWeek}/{semester.totalWeeks}</p>
                           <div className="h-1.5 rounded-full bg-muted overflow-hidden mt-1">
-                            <div className="h-full rounded-full bg-primary" style={{ width: `${(semester.currentWeek / semester.totalWeeks) * 100}%` }} />
+                            <div className="h-full rounded-full bg-primary" style={{ width: `${((semester.currentWeek ?? 0) / semester.totalWeeks) * 100}%` }} />
                           </div>
                         </div>
                       )}
