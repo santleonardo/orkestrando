@@ -82,6 +82,8 @@ export interface Profile extends BaseEntity {
   firstName: string
   lastName: string
   fullName: string
+  email?: string // from joined auth.users or enriched by API
+  phone?: string
   avatarUrl?: string
   dateOfBirth?: string
   gender?: 'male' | 'female' | 'other'
