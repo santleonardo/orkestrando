@@ -41,7 +41,7 @@ export default function HolidaysPage() {
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [selectedHoliday, setSelectedHoliday] = useState<Holiday | null>(null)
   const [formData, setFormData] = useState({
-    name: '', date: '', type: 'national' as const, isRecurring: true, affectsClasses: true,
+    name: '', date: '', type: 'national' as Holiday['type'], isRecurring: true, affectsClasses: true,
   })
 
   const upcomingHolidays = holidays
