@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
     const pageSize = parseInt(searchParams.get('pageSize') || '20')
 
     const where: Record<string, unknown> = {}
-    if (classId) where.class_id = classId
+    if (classId) where.classId = classId
     if (type) where.type = type
     if (published !== null && published !== undefined) {
       where.isPublished = published === 'true'
@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
         },
         skip: (page - 1) * pageSize,
         take: pageSize,
-        orderBy: { created_at: 'desc' },
+        orderBy: { createdAt: 'desc' },
       }),
       db.material.count({ where }),
     ])
