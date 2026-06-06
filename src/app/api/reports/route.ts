@@ -15,11 +15,11 @@ export async function GET(request: NextRequest) {
       db.report.findMany({
         where,
         include: {
-          creator: { select: { id: true, firstName: true, lastName: true, displayName: true } },
+          creator: { select: { id: true, firstName: true, lastName: true } },
         },
         skip: (page - 1) * pageSize,
         take: pageSize,
-        orderBy: { created_at: 'desc' },
+        orderBy: { createdAt: 'desc' },
       }),
       db.report.count({ where }),
     ])
