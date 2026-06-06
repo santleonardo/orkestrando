@@ -13,9 +13,9 @@ export async function GET(request: NextRequest) {
     const pageSize = parseInt(searchParams.get('pageSize') || '20')
 
     const where: Record<string, unknown> = {}
-    if (subjectId) where.subject_id = subjectId
-    if (teacherId) where.teacher_id = teacherId
-    if (roomId) where.room_id = roomId
+    if (subjectId) where.subjectId = subjectId
+    if (teacherId) where.teacherId = teacherId
+    if (roomId) where.roomId = roomId
     if (weekday) where.weekday = weekday
     if (search) where.code = { contains: search }
 
@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
         where,
         include: {
           subject: true,
-          teacher: { select: { id: true, firstName: true, lastName: true, displayName: true, email: true } },
+          teacher: { select: { id: true, firstName: true, lastName: true, email: true } },
           room: true,
         },
         skip: (page - 1) * pageSize,
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
     const cls = await db.class.create({ data: body })
     const result = await db.class.findUnique({
       where: { id: cls.id },
-      include: { subject: true, teacher: { select: { id: true, firstName: true, lastName: true, displayName: true } }, room: true },
+      include: { subject: true, teacher: { select: { id: true, firstName: true, lastName: true } }, room: true },
     })
     return NextResponse.json({ success: true, data: result }, { status: 201 })
   } catch (error: unknown) {
