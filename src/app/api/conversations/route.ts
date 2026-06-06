@@ -15,22 +15,22 @@ export async function GET(request: NextRequest) {
     const [conversations, total] = await Promise.all([
       db.conversation.findMany({
         where: {
-          participants: { some: { profile_id: profileId } },
+          participants: { some: { profileId } },
         },
         include: {
-          participants: { include: { profile: { select: { id: true, firstName: true, lastName: true, displayName: true, avatar: true } } } },
+          participants: { include: { profile: { select: { id: true, firstName: true, lastName: true, avatar: true } } } },
           messages: {
-            orderBy: { created_at: 'desc' },
+            orderBy: { createdAt: 'desc' },
             take: 1,
-            select: { id: true, content: true, created_at: true, sender_id: true },
+            select: { id: true, content: true, createdAt: true, senderId: true },
           },
         },
         skip: (page - 1) * pageSize,
         take: pageSize,
-        orderBy: { updated_at: 'desc' },
+        orderBy: { updatedAt: 'desc' },
       }),
       db.conversation.count({
-        where: { participants: { some: { profile_id: profileId } } },
+        where: { participants: { some: { profileId } } },
       }),
     ])
 
@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
         },
       },
       include: {
-        participants: { include: { profile: { select: { id: true, firstName: true, lastName: true, displayName: true } } } },
+        participants: { include: { profile: { select: { id: true, firstName: true, lastName: true } } } },
       },
     })
 
