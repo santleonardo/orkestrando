@@ -40,12 +40,33 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      setSession(session);
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (session) {
+        // getSession() reads from localStorage without server verification.
+        // Validate against the server so stale/revoked tokens are detected
+        // immediately instead of triggering _recoverAndRefresh 400 loops.
+        const { error } = await supabase.auth.getUser();
+        if (error) {
+          // Token is invalid on the server — clear localStorage so the
+          // refresh loop stops firing on every subsequent page load.
+          await supabase.auth.signOut();
+          setSession(null);
+        } else {
+          setSession(session);
+        }
+      } else {
+        setSession(null);
+      }
     } catch (error) {
       console.error("Error fetching session:", error);
+      // Attempt to clear any corrupted session data from localStorage.
+      try {
+        const client = getSupabaseBrowserClient();
+        if (client) await client.auth.signOut();
+      } catch {
+        // signOut itself can fail if tokens are fully corrupt — ignore.
+      }
       setSession(null);
     } finally {
       setIsLoading(false);
@@ -60,8 +81,14 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      // SIGNED_OUT is fired automatically by Supabase after a failed token
+      // refresh, so explicitly nulling the session here stops any stale UI.
+      if (event === "SIGNED_OUT") {
+        setSession(null);
+      } else {
+        setSession(session);
+      }
       setIsLoading(false);
     });
 
