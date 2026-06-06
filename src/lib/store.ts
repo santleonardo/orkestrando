@@ -1,11 +1,13 @@
 import { create } from 'zustand'
-import { createClient } from '@supabase/supabase-js'
+import { getSupabaseBrowserClient } from '@/lib/supabase/client'
 
+// Use the shared singleton so all auth state lives in one client instance.
+// Creating multiple clients via createClient() causes them to fight over the
+// same localStorage tokens and corrupt each other's refresh state.
 function getSupabase() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
+  const client = getSupabaseBrowserClient()
+  if (!client) throw new Error('Supabase is not configured')
+  return client
 }
 
 interface Profile {
