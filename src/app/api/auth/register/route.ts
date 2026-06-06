@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Campos obrigatórios faltando' }, { status: 400 })
     }
 
-    // Create user via standard signUp (no admin key needed)
+    // Create user via standard signUp
     const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
@@ -55,16 +55,13 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    // Sign in to get session token
-    const { data: sessionData, error: sessionError } = await supabase.auth.signInWithPassword({ email, password })
-
-    if (sessionError || !sessionData.session) {
-      return NextResponse.json({ token: profile.id, user: profile }, { status: 201 })
-    }
+    // Try to sign in — works only if email confirmation is disabled
+    const { data: sessionData } = await supabase.auth.signInWithPassword({ email, password })
 
     return NextResponse.json({
-      token: sessionData.session.access_token,
+      token: sessionData?.session?.access_token ?? null,
       user: profile,
+      needsConfirmation: !sessionData?.session,
     }, { status: 201 })
 
   } catch (error: any) {
