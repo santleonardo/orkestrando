@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
         },
         skip: (page - 1) * pageSize,
         take: pageSize,
-        orderBy: { createdAt: 'desc' },
+        orderBy: { created_at: 'desc' },
       }),
       db.report.count({ where }),
     ])

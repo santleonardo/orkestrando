@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
 
     const profiles = await db.profile.findMany({
       where,
-      orderBy: { createdAt: 'desc' },
+      orderBy: { created_at: 'desc' },
     })
     const safe = profiles.map(({ password: _, ...p }) => p)
     return NextResponse.json(safe)

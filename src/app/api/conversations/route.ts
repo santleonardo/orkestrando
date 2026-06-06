@@ -15,22 +15,22 @@ export async function GET(request: NextRequest) {
     const [conversations, total] = await Promise.all([
       db.conversation.findMany({
         where: {
-          participants: { some: { profileId } },
+          participants: { some: { profile_id: profileId } },
         },
         include: {
           participants: { include: { profile: { select: { id: true, firstName: true, lastName: true, displayName: true, avatar: true } } } },
           messages: {
-            orderBy: { createdAt: 'desc' },
+            orderBy: { created_at: 'desc' },
             take: 1,
-            select: { id: true, content: true, createdAt: true, senderId: true },
+            select: { id: true, content: true, created_at: true, sender_id: true },
           },
         },
         skip: (page - 1) * pageSize,
         take: pageSize,
-        orderBy: { updatedAt: 'desc' },
+        orderBy: { updated_at: 'desc' },
       }),
       db.conversation.count({
-        where: { participants: { some: { profileId } } },
+        where: { participants: { some: { profile_id: profileId } } },
       }),
     ])
 

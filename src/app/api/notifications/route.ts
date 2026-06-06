@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'profileId is required' }, { status: 400 })
     }
 
-    const where: Record<string, unknown> = { profileId }
+    const where: Record<string, unknown> = { profile_id: profileId }
     if (unreadOnly === 'true') {
       where.isRead = false
     }
@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
         where,
         skip: (page - 1) * pageSize,
         take: pageSize,
-        orderBy: { createdAt: 'desc' },
+        orderBy: { created_at: 'desc' },
       }),
       db.notification.count({ where }),
     ])

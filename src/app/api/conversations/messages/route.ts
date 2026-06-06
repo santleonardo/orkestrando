@@ -4,21 +4,21 @@ import { db } from '@/lib/db'
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
-    const conversationId = searchParams.get('conversationId')
+    const conversation_id = searchParams.get('conversation_id')
 
-    if (!conversationId) {
-      return NextResponse.json({ error: 'conversationId required' }, { status: 400 })
+    if (!conversation_id) {
+      return NextResponse.json({ error: 'conversation_id required' }, { status: 400 })
     }
 
     const messages = await db.message.findMany({
-      where: { conversationId },
+      where: { conversation_id },
       include: { sender: { select: { id: true, displayName: true, avatar: true } } },
-      orderBy: { createdAt: 'asc' },
+      orderBy: { created_at: 'asc' },
     })
 
     // Mark unread as read
     await db.message.updateMany({
-      where: { conversationId, isRead: false },
+      where: { conversation_id, isRead: false },
       data: { isRead: true },
     })
 
@@ -30,20 +30,20 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const { conversationId, senderId, content } = await request.json()
+    const { conversation_id, sender_id, content } = await request.json()
 
-    if (!conversationId || !senderId || !content) {
+    if (!conversation_id || !sender_id || !content) {
       return NextResponse.json({ error: 'Missing fields' }, { status: 400 })
     }
 
     const message = await db.message.create({
-      data: { conversationId, senderId, content },
+      data: { conversation_id, sender_id, content },
       include: { sender: { select: { id: true, displayName: true } } },
     })
 
     await db.conversation.update({
-      where: { id: conversationId },
-      data: { updatedAt: new Date() },
+      where: { id: conversation_id },
+      data: { updated_at: new Date() },
     })
 
     return NextResponse.json(message, { status: 201 })

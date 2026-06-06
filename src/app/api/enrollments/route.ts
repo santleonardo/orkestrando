@@ -11,8 +11,8 @@ export async function GET(request: NextRequest) {
     const pageSize = parseInt(searchParams.get('pageSize') || '20')
 
     const where: Record<string, unknown> = {}
-    if (classId) where.classId = classId
-    if (studentId) where.studentId = studentId
+    if (classId) where.class_id = classId
+    if (studentId) where.student_id = studentId
     if (status) where.status = status
 
     const [enrollments, total] = await Promise.all([
@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
         },
         skip: (page - 1) * pageSize,
         take: pageSize,
-        orderBy: { createdAt: 'desc' },
+        orderBy: { created_at: 'desc' },
       }),
       db.enrollment.count({ where }),
     ])

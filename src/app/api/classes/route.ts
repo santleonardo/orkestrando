@@ -13,9 +13,9 @@ export async function GET(request: NextRequest) {
     const pageSize = parseInt(searchParams.get('pageSize') || '20')
 
     const where: Record<string, unknown> = {}
-    if (subjectId) where.subjectId = subjectId
-    if (teacherId) where.teacherId = teacherId
-    if (roomId) where.roomId = roomId
+    if (subjectId) where.subject_id = subjectId
+    if (teacherId) where.teacher_id = teacherId
+    if (roomId) where.room_id = roomId
     if (weekday) where.weekday = weekday
     if (search) where.code = { contains: search }
 

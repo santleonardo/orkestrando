@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
     const pageSize = parseInt(searchParams.get('pageSize') || '20')
 
     const where: Record<string, unknown> = {}
-    if (profileId) where.profileId = profileId
+    if (profileId) where.profile_id = profileId
     if (action) where.action = action
     if (resource) where.resource = resource
 
@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
         },
         skip: (page - 1) * pageSize,
         take: pageSize,
-        orderBy: { createdAt: 'desc' },
+        orderBy: { created_at: 'desc' },
       }),
       db.auditLog.count({ where }),
     ])

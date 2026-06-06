@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
     const where: Record<string, unknown> = {}
     if (enrollmentId) where.enrollmentId = enrollmentId
     if (classId) {
-      where.enrollment = { classId }
+      where.enrollment = { class_id: classId }
     }
     if (date) {
       where.date = new Date(date)
