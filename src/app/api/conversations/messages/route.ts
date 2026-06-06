@@ -5,6 +5,7 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const conversationId = searchParams.get('conversationId')
+    const profileId = searchParams.get('profileId')
 
     if (!conversationId) {
       return NextResponse.json({ error: 'conversationId required' }, { status: 400 })
@@ -12,15 +13,17 @@ export async function GET(request: NextRequest) {
 
     const messages = await db.message.findMany({
       where: { conversationId },
-      include: { sender: { select: { id: true, avatar: true } } },
+      include: { sender: { select: { id: true, displayName: true, avatar: true } } },
       orderBy: { createdAt: 'asc' },
     })
 
-    // Mark unread as read
-    await db.message.updateMany({
-      where: { conversationId, isRead: false },
-      data: { isRead: true },
-    })
+    // Mark participant as having read up to now
+    if (profileId) {
+      await db.conversationParticipant.updateMany({
+        where: { conversationId, profileId },
+        data: { lastReadAt: new Date() },
+      })
+    }
 
     return NextResponse.json(messages)
   } catch (error) {
@@ -30,20 +33,20 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const { conversationId, senderId, content } = await request.json()
+    const { conversationId, senderId, content, orgId } = await request.json()
 
     if (!conversationId || !senderId || !content) {
       return NextResponse.json({ error: 'Missing fields' }, { status: 400 })
     }
 
     const message = await db.message.create({
-      data: { conversationId, senderId, content },
-      include: { sender: { select: { id: true } } },
+      data: { orgId, conversationId, senderId, content },
+      include: { sender: { select: { id: true, displayName: true } } },
     })
 
     await db.conversation.update({
       where: { id: conversationId },
-      data: { updatedAt: new Date() },
+      data: { lastMessageAt: new Date(), updatedAt: new Date() },
     })
 
     return NextResponse.json(message, { status: 201 })
