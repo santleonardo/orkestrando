@@ -8,7 +8,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       where: { id },
       include: {
         class: { include: { subject: true, teacher: { select: { id: true, firstName: true, lastName: true } } } },
-        student: { select: { id: true, firstName: true, lastName: true, displayName: true } },
+        student: { select: { id: true, firstName: true, lastName: true } },
         attendance: { orderBy: { date: 'desc' } },
       },
     })
