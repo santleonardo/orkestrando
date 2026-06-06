@@ -4,17 +4,15 @@ import { db } from '@/lib/db'
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
-    const enrollmentId = searchParams.get('enrollmentId')
-    const classId = searchParams.get('classId')
+    const classSessionId = searchParams.get('classSessionId')
+    const studentId = searchParams.get('studentId')
     const date = searchParams.get('date')
     const page = parseInt(searchParams.get('page') || '1')
     const pageSize = parseInt(searchParams.get('pageSize') || '20')
 
     const where: Record<string, unknown> = {}
-    if (enrollmentId) where.enrollmentId = enrollmentId
-    if (classId) {
-      where.enrollment = { class_id: classId }
-    }
+    if (classSessionId) where.classSessionId = classSessionId
+    if (studentId) where.studentId = studentId
     if (date) {
       where.date = new Date(date)
     }
@@ -23,8 +21,8 @@ export async function GET(request: NextRequest) {
       db.attendance.findMany({
         where,
         include: {
-          enrollment: { include: { student: { select: { id: true, firstName: true, lastName: true } } } },
-          recorder: { select: { id: true, firstName: true, lastName: true } },
+          student: { include: { profile: { select: { id: true, firstName: true, lastName: true, displayName: true } } } },
+          classSession: true,
         },
         skip: (page - 1) * pageSize,
         take: pageSize,
@@ -61,10 +59,12 @@ export async function POST(request: NextRequest) {
     const date = body.date ? new Date(body.date) : new Date()
 
     const created = await db.$transaction(
-      records.map((r: { enrollmentId: string; status: string; notes?: string }) =>
+      records.map((r: { classSessionId: string; studentId: string; status: string; notes?: string }) =>
         db.attendance.create({
           data: {
-            enrollmentId: r.enrollmentId,
+            orgId: r.orgId || body.orgId,
+            classSessionId: r.classSessionId,
+            studentId: r.studentId,
             status: r.status || 'PRESENT',
             notes: r.notes,
             date,
