@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
           participants: { some: { profileId } },
         },
         include: {
-          participants: { include: { profile: { select: { id: true, firstName: true, lastName: true, avatar: true } } } },
+          participants: { include: { profile: { select: { id: true, firstName: true, lastName: true, displayName: true, avatar: true } } } },
           messages: {
             orderBy: { createdAt: 'desc' },
             take: 1,
@@ -50,21 +50,23 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { type, title, participantIds } = body
+    const { orgId, type, title, participantIds, createdBy } = body
     if (!participantIds || participantIds.length < 2) {
       return NextResponse.json({ success: false, error: 'At least 2 participants required' }, { status: 400 })
     }
 
     const conversation = await db.conversation.create({
       data: {
+        orgId,
         type: type || 'DIRECT',
         title,
+        createdBy,
         participants: {
           create: participantIds.map((id: string) => ({ profileId: id })),
         },
       },
       include: {
-        participants: { include: { profile: { select: { id: true, firstName: true, lastName: true } } } },
+        participants: { include: { profile: { select: { id: true, firstName: true, lastName: true, displayName: true } } } },
       },
     })
 
