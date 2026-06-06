@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/providers/AuthProvider";
@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/card";
 import { Music, Loader2 } from "lucide-react";
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirect = searchParams.get("redirect") ?? "/";
@@ -48,6 +48,76 @@ export default function LoginPage() {
   }
 
   return (
+    <Card>
+      <CardHeader className="space-y-1">
+        <CardTitle className="text-xl">Entrar</CardTitle>
+        <CardDescription>
+          Use seu e-mail e senha para acessar a plataforma.
+        </CardDescription>
+      </CardHeader>
+
+      <form onSubmit={handleSubmit}>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="email">E-mail</Label>
+            <Input
+              id="email"
+              type="email"
+              placeholder="seu@email.com"
+              autoComplete="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="password">Senha</Label>
+            <Input
+              id="password"
+              type="password"
+              placeholder="••••••••"
+              autoComplete="current-password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </div>
+
+          {error && (
+            <p className="text-sm text-destructive">{error}</p>
+          )}
+        </CardContent>
+
+        <CardFooter className="flex flex-col gap-3">
+          <Button type="submit" className="w-full" disabled={isLoading}>
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Entrando…
+              </>
+            ) : (
+              "Entrar"
+            )}
+          </Button>
+
+          <p className="text-center text-sm text-muted-foreground">
+            Não tem conta?{" "}
+            <Link
+              href="/signup"
+              className="font-medium text-primary underline-offset-4 hover:underline"
+            >
+              Criar conta
+            </Link>
+          </p>
+        </CardFooter>
+      </form>
+    </Card>
+  );
+}
+
+export default function LoginPage() {
+  return (
     <div className="flex min-h-screen items-center justify-center bg-muted/30 px-4">
       <div className="w-full max-w-sm">
         {/* Logo */}
@@ -58,71 +128,9 @@ export default function LoginPage() {
           <span className="text-2xl font-bold tracking-tight">Orkestrando</span>
         </div>
 
-        <Card>
-          <CardHeader className="space-y-1">
-            <CardTitle className="text-xl">Entrar</CardTitle>
-            <CardDescription>
-              Use seu e-mail e senha para acessar a plataforma.
-            </CardDescription>
-          </CardHeader>
-
-          <form onSubmit={handleSubmit}>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">E-mail</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="seu@email.com"
-                  autoComplete="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="password">Senha</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="••••••••"
-                  autoComplete="current-password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-              </div>
-
-              {error && (
-                <p className="text-sm text-destructive">{error}</p>
-              )}
-            </CardContent>
-
-            <CardFooter className="flex flex-col gap-3">
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Entrando…
-                  </>
-                ) : (
-                  "Entrar"
-                )}
-              </Button>
-
-              <p className="text-center text-sm text-muted-foreground">
-                Não tem conta?{" "}
-                <Link
-                  href="/signup"
-                  className="font-medium text-primary underline-offset-4 hover:underline"
-                >
-                  Criar conta
-                </Link>
-              </p>
-            </CardFooter>
-          </form>
-        </Card>
+        <Suspense fallback={<div className="h-64 animate-pulse rounded-lg bg-muted" />}>
+          <LoginForm />
+        </Suspense>
       </div>
     </div>
   );
