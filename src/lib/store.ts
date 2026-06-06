@@ -1,4 +1,12 @@
 import { create } from 'zustand'
+import { createClient } from '@supabase/supabase-js'
+
+function getSupabase() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
+}
 
 interface Profile {
   id: string
@@ -42,7 +50,7 @@ interface AppState {
   // Actions
   login: (email: string, password: string) => Promise<void>
   register: (data: any) => Promise<void>
-  logout: () => void
+  logout: () => Promise<void>
   setActiveView: (view: string) => void
 
   // Data fetchers
@@ -120,17 +128,18 @@ export const useStore = create<AppState>((set, get) => ({
   login: async (email: string, password: string) => {
     set({ isLoading: true })
     try {
-      const res = await fetch('/api/auth', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      })
-      if (!res.ok) {
-        const err = await res.json()
-        throw new Error(err.error || 'Login failed')
+      const supabase = getSupabase()
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+      if (error || !data.user || !data.session) {
+        throw new Error(error?.message || 'Credenciais inválidas')
       }
-      const { token, user } = await res.json()
-      set({ token, user, isAuthenticated: true, isLoading: false, activeView: 'dashboard' })
+      // Fetch profile from our API
+      const res = await fetch('/api/auth/me', {
+        headers: { Authorization: `Bearer ${data.session.access_token}` },
+      })
+      if (!res.ok) throw new Error('Perfil não encontrado. Contate o administrador.')
+      const { data: profile } = await res.json()
+      set({ token: data.session.access_token, user: profile, isAuthenticated: true, isLoading: false, activeView: 'dashboard' })
     } catch (error: any) {
       set({ isLoading: false })
       throw error
@@ -157,7 +166,9 @@ export const useStore = create<AppState>((set, get) => ({
     }
   },
 
-  logout: () => {
+  logout: async () => {
+    const supabase = getSupabase()
+    await supabase.auth.signOut()
     set({
       token: null,
       user: null,
