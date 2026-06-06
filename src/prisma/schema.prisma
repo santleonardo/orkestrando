@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model Organization {
@@ -12,32 +13,32 @@ model Organization {
   name       String
   slug       String   @unique
   logo       String?
-  settings   String   @default("{}")
+  settings   Json     @default("{}")
   created_at DateTime @default(now())
   updated_at DateTime @default(now())
 
-  profiles             Profile[]
-  courses              Course[]
-  subjects             Subject[]
-  rooms                Room[]
-  semesters            Semester[]
+  profiles               Profile[]
+  courses                Course[]
+  subjects               Subject[]
+  rooms                  Room[]
+  semesters              Semester[]
   teacher_availabilities TeacherAvailability[]
-  teacher_blocks       TeacherBlock[]
-  holidays             Holiday[]
-  classes              Class[]
-  class_sessions       ClassSession[]
-  enrollments          Enrollment[]
-  attendances          Attendance[]
-  attendance_signatures AttendanceSignature[]
-  materials            Material[]
-  assignments          Assignment[]
+  teacher_blocks         TeacherBlock[]
+  holidays               Holiday[]
+  classes                Class[]
+  class_sessions         ClassSession[]
+  enrollments            Enrollment[]
+  attendances            Attendance[]
+  attendance_signatures  AttendanceSignature[]
+  materials              Material[]
+  assignments            Assignment[]
   assignment_submissions AssignmentSubmission[]
-  conversations        Conversation[]
-  messages             Message[]
-  notifications        Notification[]
-  audit_logs           AuditLog[]
-  reports              Report[]
-  session_settings     SessionSetting[]
+  conversations          Conversation[]
+  messages               Message[]
+  notifications          Notification[]
+  audit_logs             AuditLog[]
+  reports                Report[]
+  session_settings       SessionSetting[]
 
   @@map("organizations")
 }
@@ -56,18 +57,18 @@ model Profile {
   created_at DateTime @default(now())
   updated_at DateTime @default(now())
 
-  org                    Organization              @relation(fields: [org_id], references: [id], onDelete: Cascade)
-  teacher                Teacher?
-  student                Student?
-  coordinator            Coordinator?
-  sent_messages          Message[]                 @relation("MessageSender")
+  org                       Organization              @relation(fields: [org_id], references: [id], onDelete: Cascade)
+  teacher                   Teacher?
+  student                   Student?
+  coordinator               Coordinator?
+  sent_messages             Message[]                 @relation("MessageSender")
   conversation_participants ConversationParticipant[]
-  notifications          Notification[]
-  audit_logs             AuditLog[]
-  reports                Report[]                  @relation("ReportCreator")
-  uploaded_materials     Material[]                @relation("MaterialUploader")
-  signed_attendances     AttendanceSignature[]     @relation("SignatureBy")
-  created_conversations  Conversation[]            @relation("ConversationCreator")
+  notifications             Notification[]
+  audit_logs                AuditLog[]
+  reports                   Report[]                  @relation("ReportCreator")
+  uploaded_materials        Material[]                @relation("MaterialUploader")
+  signed_attendances        AttendanceSignature[]     @relation("SignatureBy")
+  created_conversations     Conversation[]            @relation("ConversationCreator")
 
   @@unique([org_id, email])
   @@index([org_id, role])
@@ -76,8 +77,8 @@ model Profile {
 }
 
 model Permission {
-  id          String @id @default(cuid())
-  name        String @unique
+  id          String  @id @default(cuid())
+  name        String  @unique
   description String?
   module      String
 
@@ -99,31 +100,31 @@ model RolePermission {
 }
 
 model Teacher {
-  id               String   @id @default(cuid())
-  profile_id       String   @unique
-  department       String?
-  specializations  String   @default("[]")
-  hire_date        DateTime?
-  bio              String?
-  created_at       DateTime @default(now())
+  id              String    @id @default(cuid())
+  profile_id      String    @unique
+  department      String?
+  specializations Json      @default("[]")
+  hire_date       DateTime?
+  bio             String?
+  created_at      DateTime  @default(now())
 
-  profile              Profile               @relation(fields: [profile_id], references: [id], onDelete: Cascade)
-  classes              Class[]
+  profile                Profile               @relation(fields: [profile_id], references: [id], onDelete: Cascade)
+  classes                Class[]
   teacher_availabilities TeacherAvailability[]
-  teacher_blocks       TeacherBlock[]
-  created_assignments  Assignment[]          @relation("AssignmentCreator")
+  teacher_blocks         TeacherBlock[]
+  created_assignments    Assignment[]          @relation("AssignmentCreator")
 
   @@map("teachers")
 }
 
 model Student {
-  id                String  @id @default(cuid())
-  profile_id        String  @unique
+  id                String   @id @default(cuid())
+  profile_id        String   @unique
   enrollment_number String
   course            String?
   semester          Int?
   shift             String?
-  status            String  @default("active")
+  status            String   @default("active")
   created_at        DateTime @default(now())
 
   profile                Profile               @relation(fields: [profile_id], references: [id], onDelete: Cascade)
@@ -135,10 +136,10 @@ model Student {
 }
 
 model Coordinator {
-  id         String  @id @default(cuid())
-  profile_id String  @unique
+  id         String   @id @default(cuid())
+  profile_id String   @unique
   department String?
-  level      Int     @default(1)
+  level      Int      @default(1)
   created_at DateTime @default(now())
 
   profile Profile @relation(fields: [profile_id], references: [id], onDelete: Cascade)
@@ -147,14 +148,14 @@ model Coordinator {
 }
 
 model Course {
-  id            String  @id @default(cuid())
+  id            String   @id @default(cuid())
   org_id        String
   name          String
   code          String
   description   String?
   duration      Int?
-  total_credits Int     @default(0)
-  is_active     Boolean @default(true)
+  total_credits Int      @default(0)
+  is_active     Boolean  @default(true)
   created_at    DateTime @default(now())
 
   org      Organization @relation(fields: [org_id], references: [id], onDelete: Cascade)
@@ -165,24 +166,24 @@ model Course {
 }
 
 model Subject {
-  id           String   @id @default(cuid())
-  org_id       String
-  course_id    String?
-  name         String
-  code         String
-  description  String?
-  credits      Int      @default(0)
-  workload     Int      @default(0)
-  semester     Int?
-  is_elective  Boolean  @default(false)
-  is_active    Boolean  @default(true)
-  prerequisites String  @default("[]")
-  created_at   DateTime @default(now())
+  id            String   @id @default(cuid())
+  org_id        String
+  course_id     String?
+  name          String
+  code          String
+  description   String?
+  credits       Int      @default(0)
+  workload      Int      @default(0)
+  semester      Int?
+  is_elective   Boolean  @default(false)
+  is_active     Boolean  @default(true)
+  prerequisites Json     @default("[]")
+  created_at    DateTime @default(now())
 
-  org       Organization @relation(fields: [org_id], references: [id], onDelete: Cascade)
-  course    Course?      @relation(fields: [course_id], references: [id], onDelete: SetNull)
-  classes   Class[]
-  materials Material[]
+  org         Organization @relation(fields: [org_id], references: [id], onDelete: Cascade)
+  course      Course?      @relation(fields: [course_id], references: [id], onDelete: SetNull)
+  classes     Class[]
+  materials   Material[]
   assignments Assignment[]
 
   @@unique([org_id, code])
@@ -190,16 +191,16 @@ model Subject {
 }
 
 model Room {
-  id        String  @id @default(cuid())
-  org_id    String
-  name      String
-  code      String
-  capacity  Int     @default(0)
-  type      String  @default("CLASSROOM")
-  building  String?
-  floor     Int?
-  resources String  @default("[]")
-  is_active Boolean @default(true)
+  id         String   @id @default(cuid())
+  org_id     String
+  name       String
+  code       String
+  capacity   Int      @default(0)
+  type       String   @default("CLASSROOM")
+  building   String?
+  floor      Int?
+  resources  Json     @default("[]")
+  is_active  Boolean  @default(true)
   created_at DateTime @default(now())
 
   org     Organization @relation(fields: [org_id], references: [id], onDelete: Cascade)
@@ -229,16 +230,16 @@ model Semester {
 }
 
 model TeacherAvailability {
-  id         String  @id @default(cuid())
-  org_id     String
-  teacher_id String
+  id          String   @id @default(cuid())
+  org_id      String
+  teacher_id  String
   semester_id String
-  weekday    String
-  start_time String
-  end_time   String
-  is_active  Boolean  @default(true)
-  created_at DateTime @default(now())
-  updated_at DateTime @default(now())
+  weekday     String
+  start_time  String
+  end_time    String
+  is_active   Boolean  @default(true)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @default(now())
 
   org      Organization @relation(fields: [org_id], references: [id], onDelete: Cascade)
   teacher  Teacher      @relation(fields: [teacher_id], references: [id], onDelete: Cascade)
@@ -282,7 +283,7 @@ model Holiday {
 }
 
 model Class {
-  id               String  @id @default(cuid())
+  id               String   @id @default(cuid())
   org_id           String
   subject_id       String
   semester_id      String
@@ -290,17 +291,17 @@ model Class {
   room_id          String?
   name             String
   code             String
-  schedule         String  @default("[]")
-  max_students     Int     @default(0)
-  current_students Int     @default(0)
-  status           String  @default("ACTIVE")
+  schedule         Json     @default("[]")
+  max_students     Int      @default(0)
+  current_students Int      @default(0)
+  status           String   @default("ACTIVE")
   created_at       DateTime @default(now())
 
-  org         Organization  @relation(fields: [org_id], references: [id], onDelete: Cascade)
-  subject     Subject       @relation(fields: [subject_id], references: [id], onDelete: Cascade)
-  semester    Semester      @relation(fields: [semester_id], references: [id], onDelete: Cascade)
-  teacher     Teacher       @relation(fields: [teacher_id], references: [id], onDelete: Cascade)
-  room        Room?         @relation(fields: [room_id], references: [id], onDelete: SetNull)
+  org         Organization   @relation(fields: [org_id], references: [id], onDelete: Cascade)
+  subject     Subject        @relation(fields: [subject_id], references: [id], onDelete: Cascade)
+  semester    Semester       @relation(fields: [semester_id], references: [id], onDelete: Cascade)
+  teacher     Teacher        @relation(fields: [teacher_id], references: [id], onDelete: Cascade)
+  room        Room?          @relation(fields: [room_id], references: [id], onDelete: SetNull)
   enrollments Enrollment[]
   sessions    ClassSession[]
   materials   Material[]
@@ -391,18 +392,18 @@ model AttendanceSignature {
 }
 
 model Material {
-  id           String  @id @default(cuid())
+  id           String   @id @default(cuid())
   org_id       String
   subject_id   String
   class_id     String?
   uploaded_by  String
   title        String
   description  String?
-  type         String  @default("PDF")
+  type         String   @default("PDF")
   file_path    String
-  file_size    Int     @default(0)
-  version      Int     @default(1)
-  is_published Boolean @default(false)
+  file_size    Int      @default(0)
+  version      Int      @default(1)
+  is_published Boolean  @default(false)
   created_at   DateTime @default(now())
   updated_at   DateTime @default(now())
 
@@ -529,7 +530,7 @@ model Notification {
   title      String
   content    String?
   type       String   @default("INFO")
-  data       String   @default("{}")
+  data       Json     @default("{}")
   is_read    Boolean  @default(false)
   created_at DateTime @default(now())
 
@@ -546,7 +547,7 @@ model AuditLog {
   action      String
   resource    String
   resource_id String?
-  details     String   @default("{}")
+  details     Json     @default("{}")
   ip_address  String?
   user_agent  String?
   created_at  DateTime @default(now())
@@ -562,8 +563,8 @@ model Report {
   org_id       String
   title        String
   type         String
-  filters      String   @default("{}")
-  data         String   @default("{}")
+  filters      Json     @default("{}")
+  data         Json     @default("{}")
   generated_by String
   created_at   DateTime @default(now())
 
@@ -578,7 +579,7 @@ model SessionSetting {
   org_id        String
   semester_id   String
   setting_key   String
-  setting_value String   @default("{}")
+  setting_value Json     @default("{}")
   created_at    DateTime @default(now())
   updated_at    DateTime @default(now())
 
