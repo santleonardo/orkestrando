@@ -1,0 +1,591 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Organization {
+  id         String   @id @default(cuid())
+  name       String
+  slug       String   @unique
+  logo       String?
+  settings   String   @default("{}")
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now())
+
+  profiles             Profile[]
+  courses              Course[]
+  subjects             Subject[]
+  rooms                Room[]
+  semesters            Semester[]
+  teacher_availabilities TeacherAvailability[]
+  teacher_blocks       TeacherBlock[]
+  holidays             Holiday[]
+  classes              Class[]
+  class_sessions       ClassSession[]
+  enrollments          Enrollment[]
+  attendances          Attendance[]
+  attendance_signatures AttendanceSignature[]
+  materials            Material[]
+  assignments          Assignment[]
+  assignment_submissions AssignmentSubmission[]
+  conversations        Conversation[]
+  messages             Message[]
+  notifications        Notification[]
+  audit_logs           AuditLog[]
+  reports              Report[]
+  session_settings     SessionSetting[]
+
+  @@map("organizations")
+}
+
+model Profile {
+  id         String   @id @default(cuid())
+  user_id    String   @unique
+  org_id     String
+  role       String   @default("STUDENT")
+  first_name String
+  last_name  String
+  email      String
+  phone      String?
+  avatar     String?
+  is_active  Boolean  @default(true)
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now())
+
+  org                    Organization              @relation(fields: [org_id], references: [id], onDelete: Cascade)
+  teacher                Teacher?
+  student                Student?
+  coordinator            Coordinator?
+  sent_messages          Message[]                 @relation("MessageSender")
+  conversation_participants ConversationParticipant[]
+  notifications          Notification[]
+  audit_logs             AuditLog[]
+  reports                Report[]                  @relation("ReportCreator")
+  uploaded_materials     Material[]                @relation("MaterialUploader")
+  signed_attendances     AttendanceSignature[]     @relation("SignatureBy")
+  created_conversations  Conversation[]            @relation("ConversationCreator")
+
+  @@unique([org_id, email])
+  @@index([org_id, role])
+  @@index([org_id, is_active])
+  @@map("profiles")
+}
+
+model Permission {
+  id          String @id @default(cuid())
+  name        String @unique
+  description String?
+  module      String
+
+  role_permissions RolePermission[]
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  id            String  @id @default(cuid())
+  role_id       String
+  permission_id String
+  profile_id    String?
+
+  permission Permission @relation(fields: [permission_id], references: [id], onDelete: Cascade)
+
+  @@unique([role_id, permission_id, profile_id])
+  @@map("role_permissions")
+}
+
+model Teacher {
+  id               String   @id @default(cuid())
+  profile_id       String   @unique
+  department       String?
+  specializations  String   @default("[]")
+  hire_date        DateTime?
+  bio              String?
+  created_at       DateTime @default(now())
+
+  profile              Profile               @relation(fields: [profile_id], references: [id], onDelete: Cascade)
+  classes              Class[]
+  teacher_availabilities TeacherAvailability[]
+  teacher_blocks       TeacherBlock[]
+  created_assignments  Assignment[]          @relation("AssignmentCreator")
+
+  @@map("teachers")
+}
+
+model Student {
+  id                String  @id @default(cuid())
+  profile_id        String  @unique
+  enrollment_number String
+  course            String?
+  semester          Int?
+  shift             String?
+  status            String  @default("active")
+  created_at        DateTime @default(now())
+
+  profile                Profile               @relation(fields: [profile_id], references: [id], onDelete: Cascade)
+  enrollments            Enrollment[]
+  attendances            Attendance[]
+  assignment_submissions AssignmentSubmission[]
+
+  @@map("students")
+}
+
+model Coordinator {
+  id         String  @id @default(cuid())
+  profile_id String  @unique
+  department String?
+  level      Int     @default(1)
+  created_at DateTime @default(now())
+
+  profile Profile @relation(fields: [profile_id], references: [id], onDelete: Cascade)
+
+  @@map("coordinators")
+}
+
+model Course {
+  id            String  @id @default(cuid())
+  org_id        String
+  name          String
+  code          String
+  description   String?
+  duration      Int?
+  total_credits Int     @default(0)
+  is_active     Boolean @default(true)
+  created_at    DateTime @default(now())
+
+  org      Organization @relation(fields: [org_id], references: [id], onDelete: Cascade)
+  subjects Subject[]
+
+  @@unique([org_id, code])
+  @@map("courses")
+}
+
+model Subject {
+  id           String   @id @default(cuid())
+  org_id       String
+  course_id    String?
+  name         String
+  code         String
+  description  String?
+  credits      Int      @default(0)
+  workload     Int      @default(0)
+  semester     Int?
+  is_elective  Boolean  @default(false)
+  is_active    Boolean  @default(true)
+  prerequisites String  @default("[]")
+  created_at   DateTime @default(now())
+
+  org       Organization @relation(fields: [org_id], references: [id], onDelete: Cascade)
+  course    Course?      @relation(fields: [course_id], references: [id], onDelete: SetNull)
+  classes   Class[]
+  materials Material[]
+  assignments Assignment[]
+
+  @@unique([org_id, code])
+  @@map("subjects")
+}
+
+model Room {
+  id        String  @id @default(cuid())
+  org_id    String
+  name      String
+  code      String
+  capacity  Int     @default(0)
+  type      String  @default("CLASSROOM")
+  building  String?
+  floor     Int?
+  resources String  @default("[]")
+  is_active Boolean @default(true)
+  created_at DateTime @default(now())
+
+  org     Organization @relation(fields: [org_id], references: [id], onDelete: Cascade)
+  classes Class[]
+
+  @@unique([org_id, code])
+  @@map("rooms")
+}
+
+model Semester {
+  id         String   @id @default(cuid())
+  org_id     String
+  name       String
+  start_date DateTime
+  end_date   DateTime
+  status     String   @default("UPCOMING")
+  created_at DateTime @default(now())
+
+  org                    Organization          @relation(fields: [org_id], references: [id], onDelete: Cascade)
+  classes                Class[]
+  enrollments            Enrollment[]
+  teacher_availabilities TeacherAvailability[]
+  teacher_blocks         TeacherBlock[]
+  session_settings       SessionSetting[]
+
+  @@map("semesters")
+}
+
+model TeacherAvailability {
+  id         String  @id @default(cuid())
+  org_id     String
+  teacher_id String
+  semester_id String
+  weekday    String
+  start_time String
+  end_time   String
+  is_active  Boolean  @default(true)
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now())
+
+  org      Organization @relation(fields: [org_id], references: [id], onDelete: Cascade)
+  teacher  Teacher      @relation(fields: [teacher_id], references: [id], onDelete: Cascade)
+  semester Semester     @relation(fields: [semester_id], references: [id], onDelete: Cascade)
+
+  @@unique([teacher_id, semester_id, weekday, start_time, end_time])
+  @@map("teacher_availabilities")
+}
+
+model TeacherBlock {
+  id          String   @id @default(cuid())
+  org_id      String
+  teacher_id  String
+  semester_id String
+  date        DateTime
+  start_time  String
+  end_time    String
+  reason      String
+  description String?
+  created_at  DateTime @default(now())
+
+  org      Organization @relation(fields: [org_id], references: [id], onDelete: Cascade)
+  teacher  Teacher      @relation(fields: [teacher_id], references: [id], onDelete: Cascade)
+  semester Semester     @relation(fields: [semester_id], references: [id], onDelete: Cascade)
+
+  @@map("teacher_blocks")
+}
+
+model Holiday {
+  id         String   @id @default(cuid())
+  org_id     String
+  date       DateTime
+  name       String
+  type       String   @default("NATIONAL")
+  created_at DateTime @default(now())
+
+  org Organization @relation(fields: [org_id], references: [id], onDelete: Cascade)
+
+  @@unique([org_id, date])
+  @@map("holidays")
+}
+
+model Class {
+  id               String  @id @default(cuid())
+  org_id           String
+  subject_id       String
+  semester_id      String
+  teacher_id       String
+  room_id          String?
+  name             String
+  code             String
+  schedule         String  @default("[]")
+  max_students     Int     @default(0)
+  current_students Int     @default(0)
+  status           String  @default("ACTIVE")
+  created_at       DateTime @default(now())
+
+  org         Organization  @relation(fields: [org_id], references: [id], onDelete: Cascade)
+  subject     Subject       @relation(fields: [subject_id], references: [id], onDelete: Cascade)
+  semester    Semester      @relation(fields: [semester_id], references: [id], onDelete: Cascade)
+  teacher     Teacher       @relation(fields: [teacher_id], references: [id], onDelete: Cascade)
+  room        Room?         @relation(fields: [room_id], references: [id], onDelete: SetNull)
+  enrollments Enrollment[]
+  sessions    ClassSession[]
+  materials   Material[]
+  assignments Assignment[]
+
+  @@unique([org_id, code])
+  @@map("classes")
+}
+
+model ClassSession {
+  id            String   @id @default(cuid())
+  org_id        String
+  class_id      String
+  date          DateTime
+  start_time    String
+  end_time      String
+  topic         String?
+  description   String?
+  status        String   @default("SCHEDULED")
+  teacher_notes String?
+  created_at    DateTime @default(now())
+
+  org         Organization          @relation(fields: [org_id], references: [id], onDelete: Cascade)
+  class       Class                 @relation(fields: [class_id], references: [id], onDelete: Cascade)
+  attendances Attendance[]
+  signatures  AttendanceSignature[]
+
+  @@map("class_sessions")
+}
+
+model Enrollment {
+  id          String    @id @default(cuid())
+  org_id      String
+  student_id  String
+  class_id    String
+  semester_id String
+  status      String    @default("ACTIVE")
+  enrolled_at DateTime  @default(now())
+  dropped_at  DateTime?
+
+  org      Organization @relation(fields: [org_id], references: [id], onDelete: Cascade)
+  student  Student      @relation(fields: [student_id], references: [id], onDelete: Cascade)
+  class    Class        @relation(fields: [class_id], references: [id], onDelete: Cascade)
+  semester Semester     @relation(fields: [semester_id], references: [id], onDelete: Cascade)
+
+  @@unique([student_id, class_id, semester_id])
+  @@map("enrollments")
+}
+
+model Attendance {
+  id               String   @id @default(cuid())
+  org_id           String
+  class_session_id String
+  student_id       String
+  status           String   @default("ABSENT")
+  noted_by         String?
+  notes            String?
+  created_at       DateTime @default(now())
+  updated_at       DateTime @default(now())
+
+  org           Organization          @relation(fields: [org_id], references: [id], onDelete: Cascade)
+  class_session ClassSession          @relation(fields: [class_session_id], references: [id], onDelete: Cascade)
+  student       Student               @relation(fields: [student_id], references: [id], onDelete: Cascade)
+  signatures    AttendanceSignature[]
+
+  @@unique([class_session_id, student_id])
+  @@map("attendances")
+}
+
+model AttendanceSignature {
+  id               String   @id @default(cuid())
+  org_id           String
+  attendance_id    String
+  class_session_id String
+  signed_by        String
+  signature_type   String   @default("ATTENDANCE")
+  ip_address       String?
+  user_agent       String?
+  device           String?
+  created_at       DateTime @default(now())
+
+  org           Organization @relation(fields: [org_id], references: [id], onDelete: Cascade)
+  attendance    Attendance   @relation(fields: [attendance_id], references: [id], onDelete: Cascade)
+  class_session ClassSession @relation(fields: [class_session_id], references: [id], onDelete: Cascade)
+  signer        Profile      @relation("SignatureBy", fields: [signed_by], references: [id], onDelete: Cascade)
+
+  @@map("attendance_signatures")
+}
+
+model Material {
+  id           String  @id @default(cuid())
+  org_id       String
+  subject_id   String
+  class_id     String?
+  uploaded_by  String
+  title        String
+  description  String?
+  type         String  @default("PDF")
+  file_path    String
+  file_size    Int     @default(0)
+  version      Int     @default(1)
+  is_published Boolean @default(false)
+  created_at   DateTime @default(now())
+  updated_at   DateTime @default(now())
+
+  org      Organization @relation(fields: [org_id], references: [id], onDelete: Cascade)
+  subject  Subject      @relation(fields: [subject_id], references: [id], onDelete: Cascade)
+  class    Class?       @relation(fields: [class_id], references: [id], onDelete: SetNull)
+  uploader Profile      @relation("MaterialUploader", fields: [uploaded_by], references: [id])
+
+  @@map("materials")
+}
+
+model Assignment {
+  id          String   @id @default(cuid())
+  org_id      String
+  subject_id  String
+  class_id    String
+  created_by  String
+  title       String
+  description String?
+  due_date    DateTime
+  max_grade   Float    @default(10.0)
+  status      String   @default("PENDING")
+  created_at  DateTime @default(now())
+  updated_at  DateTime @default(now())
+
+  org         Organization           @relation(fields: [org_id], references: [id], onDelete: Cascade)
+  subject     Subject                @relation(fields: [subject_id], references: [id], onDelete: Cascade)
+  class       Class                  @relation(fields: [class_id], references: [id], onDelete: Cascade)
+  creator     Teacher                @relation("AssignmentCreator", fields: [created_by], references: [id], onDelete: Cascade)
+  submissions AssignmentSubmission[]
+
+  @@map("assignments")
+}
+
+model AssignmentSubmission {
+  id            String    @id @default(cuid())
+  org_id        String
+  assignment_id String
+  student_id    String
+  file_path     String
+  file_name     String
+  file_size     Int       @default(0)
+  grade         Float?
+  feedback      String?
+  submitted_at  DateTime  @default(now())
+  graded_at     DateTime?
+
+  org        Organization @relation(fields: [org_id], references: [id], onDelete: Cascade)
+  assignment Assignment   @relation(fields: [assignment_id], references: [id], onDelete: Cascade)
+  student    Student      @relation(fields: [student_id], references: [id], onDelete: Cascade)
+
+  @@unique([assignment_id, student_id])
+  @@map("assignment_submissions")
+}
+
+model Conversation {
+  id              String    @id @default(cuid())
+  org_id          String
+  type            String    @default("DIRECT")
+  title           String?
+  created_by      String?
+  last_message_at DateTime?
+  created_at      DateTime  @default(now())
+
+  org          Organization              @relation(fields: [org_id], references: [id], onDelete: Cascade)
+  creator      Profile?                  @relation("ConversationCreator", fields: [created_by], references: [id], onDelete: SetNull)
+  participants ConversationParticipant[]
+  messages     Message[]
+
+  @@map("conversations")
+}
+
+model ConversationParticipant {
+  id              String    @id @default(cuid())
+  conversation_id String
+  profile_id      String
+  last_read_at    DateTime?
+  created_at      DateTime  @default(now())
+
+  conversation Conversation @relation(fields: [conversation_id], references: [id], onDelete: Cascade)
+  profile      Profile      @relation(fields: [profile_id], references: [id], onDelete: Cascade)
+
+  @@unique([conversation_id, profile_id])
+  @@map("conversation_participants")
+}
+
+model Message {
+  id              String   @id @default(cuid())
+  org_id          String
+  conversation_id String
+  sender_id       String
+  content         String
+  parent_id       String?
+  created_at      DateTime @default(now())
+
+  org          Organization        @relation(fields: [org_id], references: [id], onDelete: Cascade)
+  conversation Conversation        @relation(fields: [conversation_id], references: [id], onDelete: Cascade)
+  sender       Profile             @relation("MessageSender", fields: [sender_id], references: [id], onDelete: Cascade)
+  parent       Message?            @relation("MessageReply", fields: [parent_id], references: [id], onDelete: SetNull)
+  replies      Message[]           @relation("MessageReply")
+  attachments  MessageAttachment[]
+
+  @@map("messages")
+}
+
+model MessageAttachment {
+  id         String   @id @default(cuid())
+  message_id String
+  file_path  String
+  file_name  String
+  file_size  Int      @default(0)
+  mime_type  String?
+  created_at DateTime @default(now())
+
+  message Message @relation(fields: [message_id], references: [id], onDelete: Cascade)
+
+  @@map("message_attachments")
+}
+
+model Notification {
+  id         String   @id @default(cuid())
+  org_id     String
+  profile_id String
+  title      String
+  content    String?
+  type       String   @default("INFO")
+  data       String   @default("{}")
+  is_read    Boolean  @default(false)
+  created_at DateTime @default(now())
+
+  org     Organization @relation(fields: [org_id], references: [id], onDelete: Cascade)
+  profile Profile      @relation(fields: [profile_id], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  org_id      String
+  profile_id  String?
+  action      String
+  resource    String
+  resource_id String?
+  details     String   @default("{}")
+  ip_address  String?
+  user_agent  String?
+  created_at  DateTime @default(now())
+
+  org     Organization @relation(fields: [org_id], references: [id], onDelete: Cascade)
+  profile Profile?     @relation(fields: [profile_id], references: [id], onDelete: SetNull)
+
+  @@map("audit_logs")
+}
+
+model Report {
+  id           String   @id @default(cuid())
+  org_id       String
+  title        String
+  type         String
+  filters      String   @default("{}")
+  data         String   @default("{}")
+  generated_by String
+  created_at   DateTime @default(now())
+
+  org     Organization @relation(fields: [org_id], references: [id], onDelete: Cascade)
+  creator Profile      @relation("ReportCreator", fields: [generated_by], references: [id], onDelete: Cascade)
+
+  @@map("reports")
+}
+
+model SessionSetting {
+  id            String   @id @default(cuid())
+  org_id        String
+  semester_id   String
+  setting_key   String
+  setting_value String   @default("{}")
+  created_at    DateTime @default(now())
+  updated_at    DateTime @default(now())
+
+  org      Organization @relation(fields: [org_id], references: [id], onDelete: Cascade)
+  semester Semester     @relation(fields: [semester_id], references: [id], onDelete: Cascade)
+
+  @@unique([semester_id, setting_key])
+  @@map("session_settings")
+}
