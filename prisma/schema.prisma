@@ -1,0 +1,100 @@
+// Orkestrando — Prisma Schema
+// Módulo Professor: Calendário e Disponibilidade
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  senha     String   // Hash em produção, texto para MVP
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  profile   Profile?
+}
+
+model Profile {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  role      String   // 'professor', 'aluno', 'coordenador'
+  nome      String
+  email     String
+  avatarUrl String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Relações
+  turmasComoCoordenador Turma[]           @relation("TurmaCoordenador")
+  materiasComoProfessor Materia[]         @relation("MateriaProfessor")
+  disponibilidades      Disponibilidade[]
+  aulasComoProfessor    Aula[]            @relation("AulaProfessor")
+}
+
+model Turma {
+  id            String   @id @default(cuid())
+  nome          String
+  descricao     String?
+  semestre      String
+  ano           Int
+  coordenadorId String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  coordenador   Profile?  @relation("TurmaCoordenador", fields: [coordenadorId], references: [id], onDelete: SetNull)
+  materias      Materia[]
+  aulas         Aula[]
+}
+
+model Materia {
+  id          String   @id @default(cuid())
+  nome        String
+  turmaId     String
+  professorId String?
+  createdAt   DateTime @default(now())
+
+  turma       Turma    @relation(fields: [turmaId], references: [id], onDelete: Cascade)
+  professor   Profile? @relation("MateriaProfessor", fields: [professorId], references: [id], onDelete: SetNull)
+  aulas       Aula[]
+}
+
+model Disponibilidade {
+  id             String   @id @default(cuid())
+  professorId    String
+  diaSemana      Int      // 0=domingo, 6=sábado
+  horaInicio     String   // "07:00"
+  horaFim        String   // "22:00"
+  recorrente     Boolean  @default(false)
+  dataEspecifica String?  // ISO date string, preenchido quando recorrente=false
+  semestre       String
+  ano            Int
+  createdAt      DateTime @default(now())
+
+  professor      Profile  @relation(fields: [professorId], references: [id], onDelete: Cascade)
+}
+
+model Aula {
+  id              String   @id @default(cuid())
+  materiaId       String
+  professorId     String
+  turmaId         String
+  titulo          String
+  descricao       String?
+  dataHoraInicio  DateTime
+  dataHoraFim     DateTime
+  semestre        String
+  ano             Int
+  status          String   @default("agendada") // 'agendada', 'realizada', 'cancelada'
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  materia         Materia  @relation(fields: [materiaId], references: [id], onDelete: Cascade)
+  professor       Profile  @relation("AulaProfessor", fields: [professorId], references: [id], onDelete: Cascade)
+  turma           Turma    @relation(fields: [turmaId], references: [id], onDelete: Cascade)
+}
