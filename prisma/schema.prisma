@@ -5,15 +5,20 @@ generator client {
   provider = "prisma-client-js"
 }
 
+// Supabase PostgreSQL — para deploy no Vercel
+// Set DATABASE_URL no Vercel com a connection string do Supabase:
+//   postgresql://postgres.xxxx:SENHA@aws-0-region.pooler.supabase.com:6543/postgres
+// Antes do deploy, rode supabase-setup.sql no SQL Editor do Supabase
+
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
 model User {
   id        String   @id @default(cuid())
   email     String   @unique
-  senha     String   // Hash em produção, texto para MVP
+  senha     String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   profile   Profile?
@@ -22,7 +27,7 @@ model User {
 model Profile {
   id        String   @id @default(cuid())
   userId    String   @unique
-  role      String   // 'professor', 'aluno', 'coordenador'
+  role      String
   nome      String
   email     String
   avatarUrl String?
@@ -30,7 +35,6 @@ model Profile {
   updatedAt DateTime @updatedAt
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  // Relações
   turmasComoCoordenador Turma[]           @relation("TurmaCoordenador")
   materiasComoProfessor Materia[]         @relation("MateriaProfessor")
   disponibilidades      Disponibilidade[]
@@ -67,11 +71,11 @@ model Materia {
 model Disponibilidade {
   id             String   @id @default(cuid())
   professorId    String
-  diaSemana      Int      // 0=domingo, 6=sábado
-  horaInicio     String   // "07:00"
-  horaFim        String   // "22:00"
+  diaSemana      Int
+  horaInicio     String
+  horaFim        String
   recorrente     Boolean  @default(false)
-  dataEspecifica String?  // ISO date string, preenchido quando recorrente=false
+  dataEspecifica String?
   semestre       String
   ano            Int
   createdAt      DateTime @default(now())
@@ -90,7 +94,7 @@ model Aula {
   dataHoraFim     DateTime
   semestre        String
   ano             Int
-  status          String   @default("agendada") // 'agendada', 'realizada', 'cancelada'
+  status          String   @default("agendada")
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
